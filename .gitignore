@@ -10,3 +10,4 @@ storage/
 apify_storage/
 dist/
 node_modules/
+.github/
