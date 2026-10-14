@@ -46,8 +46,8 @@ logger = logging.getLogger("stealthguard.api")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: warm all in-memory caches immediately and start 180s background warmer
-    await refresh_all_caches()
+    # Startup: spawn cache warmer in background so uvicorn binds port instantly (<50ms)
+    asyncio.create_task(refresh_all_caches())
     warmer_task = asyncio.create_task(start_cache_warmer_loop())
     yield
     warmer_task.cancel()
