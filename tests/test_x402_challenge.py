@@ -27,10 +27,34 @@ def test_build_402_challenge_headers_and_body():
     assert headers["X-402-Payment-To"].lower() == get_recipient_address().lower()
     assert "PAYMENT-REQUIRED" in headers
 
+    # Verify IETF MPP WWW-Authenticate header
+    assert "WWW-Authenticate" in headers
+    assert 'Payment id="' in headers["WWW-Authenticate"]
+    assert 'realm="stealthguard-402.onrender.com"' in headers["WWW-Authenticate"]
+    assert 'method="evm"' in headers["WWW-Authenticate"]
+    assert 'intent="charge"' in headers["WWW-Authenticate"]
+    assert 'request="' in headers["WWW-Authenticate"]
+    assert 'expires="' in headers["WWW-Authenticate"]
+
+    # Verify Access-Control-Expose-Headers includes required settlement headers
+    expose = headers["Access-Control-Expose-Headers"]
+    assert "PAYMENT-REQUIRED" in expose
+    assert "PAYMENT-RESPONSE" in expose
+    assert "WWW-Authenticate" in expose
+    assert "Payment-Receipt" in expose
+
     # Decode and verify base64 challenge payload
     raw_b64 = headers["PAYMENT-REQUIRED"]
     decoded = json.loads(base64.b64decode(raw_b64).decode("utf-8"))
     assert decoded["x402Version"] == 2
+
+    # Resource must be an object with https URL and description <= 450 chars
+    assert isinstance(decoded["resource"], dict)
+    assert decoded["resource"]["url"].startswith("https://")
+    assert decoded["resource"]["mimeType"] == "application/json"
+    assert len(decoded["resource"]["description"]) <= 450
+
+    # accepts[0] must not have a raw string "resource"
     assert len(decoded["accepts"]) == 1
     accept = decoded["accepts"][0]
     assert accept["scheme"] == "exact"
@@ -39,6 +63,11 @@ def test_build_402_challenge_headers_and_body():
     assert accept["amount"] == "5000"
     assert accept["payTo"].lower() == get_recipient_address().lower()
     assert "bazaar" in decoded["extensions"]
+
+    # Body must also have resource object with https URL
+    assert isinstance(body["resource"], dict)
+    assert body["resource"]["url"].startswith("https://")
+    assert body["x402Version"] == 2
 
 def test_unpaid_verification_returns_402():
     is_valid, pay_info, err, status = verify_x402_payment(None, "stealth_scrape_and_sanitize")

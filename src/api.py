@@ -1,13 +1,15 @@
 import asyncio
 import json
 import logging
+import os
 import time
 import uuid
 from contextlib import asynccontextmanager
 from typing import Dict, Any, Optional
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse
+from fastapi.openapi.utils import get_openapi
 from pydantic import BaseModel, Field
 
 from .config import (
@@ -29,6 +31,7 @@ from .x402_middleware import (
     verify_x402_payment,
     create_payment_response_header,
     build_bazaar_extension,
+    enforce_https,
 )
 from .mcp_server import handle_mcp_request, generate_health_and_sample_payload
 from .cache_warmer import (
@@ -51,8 +54,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="StealthGuard-402",
-    description="Stealth web extraction, prediction-market alpha, and security firewall with x402Pulse micro-pricing. Monetized via Base x402 and Apify PPE.",
+    description="Stealth web extraction and prediction-market/on-chain alpha fused with CanaryGuard prompt-injection firewall.",
     version=SERVICE_VERSION,
+    contact={
+        "name": "AK Kurox",
+        "email": "ak10082247@gmail.com",
+        "url": "https://github.com/ak10082247-max/stealthguard-402",
+    },
     lifespan=lifespan,
 )
 
@@ -69,10 +77,48 @@ app.add_middleware(
     expose_headers=[
         "WWW-Authenticate", "X-PAYMENT", "PAYMENT-SIGNATURE", "X-402-Version",
         "PAYMENT-REQUIRED", "X-Payment-Required", "X-402-Payment-Required",
-        "PAYMENT-RESPONSE", "X-402-Payment-To", "X-402-Amount", "X-402-Amount-Units",
-        "X-402-Asset", "X-402-Network", "X-402-Chain-Id", "X-Request-Id"
+        "PAYMENT-RESPONSE", "Payment-Receipt", "X-402-Payment-To", "X-402-Amount",
+        "X-402-Amount-Units", "X-402-Asset", "X-402-Network", "X-402-Chain-Id", "X-Request-Id"
     ],
 )
+
+# Map paid routes to their respective tool names
+PAID_PATH_TO_TOOL: Dict[str, str] = {
+    pricing["path"]: tool_name
+    for tool_name, pricing in TOOL_PRICING.items()
+    if pricing.get("amount_microunits", "0") != "0"
+}
+
+@app.middleware("http")
+async def x402_pre_routing_interceptor(request: Request, call_next):
+    """
+    Zero-friction x402 interceptor: Intercepts unpaid requests before FastAPI routing
+    or Pydantic validation ever returns 405 Method Not Allowed or 422 Unprocessable Entity.
+    Returns sub-2ms 402 challenge compliant with Coinbase CDP and x402scan.
+    """
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
+    path = request.url.path
+    if path in PAID_PATH_TO_TOOL:
+        payment_header = request.headers.get("PAYMENT-SIGNATURE") or request.headers.get("X-PAYMENT")
+        if not payment_header:
+            tool_name = PAID_PATH_TO_TOOL[path]
+            proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+            host = request.headers.get("host", request.url.netloc)
+            if "onrender.com" in host or proto == "https":
+                proto = "https"
+            res_url = f"{proto}://{host}{path}"
+
+            headers, challenge_body = build_402_challenge(
+                tool_name=tool_name,
+                resource_url=res_url,
+                mode="http",
+                reason="Payment required: Missing PAYMENT-SIGNATURE or X-PAYMENT header",
+            )
+            return JSONResponse(status_code=402, content=challenge_body, headers=headers)
+
+    return await call_next(request)
 
 @app.middleware("http")
 async def request_logger_and_header_middleware(request: Request, call_next):
@@ -107,9 +153,17 @@ async def parse_request_data(request: Request) -> Dict[str, Any]:
     return data
 
 # ==============================================================================
-# 1. Health, Discovery & ERC-8004 Metadata
+# Favicon & Non-Paid Discovery Routes (All have include_in_schema=False)
 # ==============================================================================
-@app.get("/health")
+@app.get("/favicon.ico", include_in_schema=False)
+@app.head("/favicon.ico", include_in_schema=False)
+async def favicon():
+    fav_path = os.path.join(os.path.dirname(__file__), "..", "static", "favicon.ico")
+    if os.path.exists(fav_path):
+        return FileResponse(fav_path, media_type="image/x-icon", headers={"Cache-Control": "public, max-age=86400"})
+    return Response(status_code=204)
+
+@app.get("/health", include_in_schema=False)
 async def health():
     return {
         "status": "ok",
@@ -121,7 +175,7 @@ async def health():
         "timestamp": int(time.time()),
     }
 
-@app.get("/stats")
+@app.get("/stats", include_in_schema=False)
 async def stats():
     return {
         "service": SERVICE_NAME,
@@ -140,7 +194,7 @@ async def stats():
         },
     }
 
-@app.get("/llms.txt", response_class=PlainTextResponse)
+@app.get("/llms.txt", response_class=PlainTextResponse, include_in_schema=False)
 async def llms_txt():
     public_url = get_public_url()
     lines = [
@@ -152,11 +206,12 @@ async def llms_txt():
         "## Endpoints Matrix (x402Pulse):",
     ]
     for tool_name, p in TOOL_PRICING.items():
-        lines.append(f"- {p['path']}: {p['price_formatted']} - {p['description']}")
+        if p["amount_microunits"] != "0":
+            lines.append(f"- {p['path']}: {p['price_formatted']} - {p['description']}")
     lines.append(f"- POST {public_url}/mcp: Streamable HTTP Model Context Protocol JSON-RPC")
     return "\n".join(lines)
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 async def root():
     public_url = get_public_url()
     return {
@@ -168,12 +223,12 @@ async def root():
         "stats": f"{public_url}/stats",
         "mcp": f"{public_url}/mcp",
         "free_sample": f"{public_url}/v1/health_and_sample",
-        "endpoints_count": len(TOOL_PRICING),
-        "endpoints": [f"{public_url}{p['path']}" for p in TOOL_PRICING.values()],
+        "endpoints_count": len([p for p in TOOL_PRICING.values() if p["amount_microunits"] != "0"]),
+        "endpoints": [f"{public_url}{p['path']}" for p in TOOL_PRICING.values() if p["amount_microunits"] != "0"],
     }
 
-@app.get("/.well-known/agent-card.json")
-@app.get("/agent-metadata.json")
+@app.get("/.well-known/agent-card.json", include_in_schema=False)
+@app.get("/agent-metadata.json", include_in_schema=False)
 async def agent_card():
     public_url = get_public_url()
     return {
@@ -212,11 +267,8 @@ async def agent_card():
         },
     }
 
-# ==============================================================================
-# 2. x402 Manifest and OpenAPI
-# ==============================================================================
-@app.get("/.well-known/x402")
-@app.get("/.well-known/x402.json")
+@app.get("/.well-known/x402", include_in_schema=False)
+@app.get("/.well-known/x402.json", include_in_schema=False)
 async def x402_manifest():
     public_url = get_public_url()
     pay_to = get_recipient_address()
@@ -246,35 +298,33 @@ async def x402_manifest():
             "network": NETWORK,
             "chainId": CHAIN_ID,
             "payTo": pay_to,
-            "tools": TOOL_PRICING,
+            "tools": {k: v for k, v in TOOL_PRICING.items() if v["amount_microunits"] != "0"},
         },
         "endpoints": endpoints,
         "mcp": {
             "url": f"{public_url}/mcp",
             "transport": "streamable-http",
-            "tools": list(TOOL_PRICING.keys()),
+            "tools": [k for k, v in TOOL_PRICING.items() if v["amount_microunits"] != "0"],
         },
     }
 
-@app.get("/openapi.json")
-@app.get("/.well-known/openapi.json")
+@app.get("/openapi.json", include_in_schema=False)
+@app.get("/.well-known/openapi.json", include_in_schema=False)
 async def openapi_spec():
     return app.openapi()
 
-# ==============================================================================
-# 3. Free Discovery Tool
-# ==============================================================================
-@app.get("/v1/health_and_sample")
-@app.post("/v1/health_and_sample")
+# Free Sample Discovery Probe
+@app.get("/v1/health_and_sample", include_in_schema=False)
+@app.post("/v1/health_and_sample", include_in_schema=False)
 async def health_and_sample(include_samples: bool = True):
     return generate_health_and_sample_payload(include_samples)
 
 # ==============================================================================
-# 4. Standard Dispatcher for Paid Micro-Endpoints (Dual GET + POST, Sub-50ms)
+# Dispatcher for Paid Endpoints (Dual GET + POST, Sub-50ms Cache Warmer)
 # ==============================================================================
 async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict[str, Any]) -> Response:
     payment_header = request.headers.get("PAYMENT-SIGNATURE") or request.headers.get("X-PAYMENT")
-    res_url = str(request.url).split("?")[0]
+    res_url = enforce_https(str(request.url).split("?")[0])
 
     is_valid, payment_info, err_msg, status_code = verify_x402_payment(
         raw_header=payment_header,
@@ -293,7 +343,7 @@ async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict
         )
         return JSONResponse(status_code=status_code, content=challenge_body, headers=headers)
 
-    # If valid payment, serve response (sub-50ms from pre-warmed cache if default args)
+    # Valid payment: serve response (<50ms from pre-warmed cache when using default args)
     req_args = await parse_request_data(request)
     merged_args = {**default_args, **req_args}
 
@@ -344,18 +394,6 @@ async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict
             "recommended_actions": get_ecosystem_recommendations("scrape"),
         }
 
-    elif tool_name == "security_url_threat_check":
-        url = merged_args.get("url", "https://stealthguard-402.onrender.com")
-        is_homograph = any(ord(c) > 127 for c in url)
-        result = {
-            "status": "success",
-            "url": url,
-            "verdict": "FLAGGED_HOMOGRAPH" if is_homograph else "BENIGN",
-            "homograph_detected": is_homograph,
-            "risk_score": 0.85 if is_homograph else 0.01,
-            "recommended_actions": get_ecosystem_recommendations("scrape"),
-        }
-
     elif tool_name == "security_x402_endpoint_verifier":
         ep = merged_args.get("endpoint_url", f"{get_public_url()}/v1/stealth_scrape_and_sanitize")
         result = {
@@ -364,18 +402,6 @@ async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict
             "verdict": "AUTHENTIC_X402_PROVIDER",
             "settlement_safe": True,
             "recommended_actions": get_ecosystem_recommendations("general"),
-        }
-
-    elif tool_name == "security_evm_calldata_firewall":
-        calldata = merged_args.get("calldata", "0x095ea7b3")
-        is_approval = calldata.startswith("0x095ea7b3")
-        result = {
-            "status": "success",
-            "calldata": calldata,
-            "selector": calldata[:10],
-            "decoded_method": "approve(address,uint256)" if is_approval else "unknown_or_custom",
-            "risk_level": "MODERATE_APPROVAL" if is_approval else "SAFE",
-            "recommended_actions": get_ecosystem_recommendations("token"),
         }
 
     else:
@@ -397,10 +423,12 @@ async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict
     return JSONResponse(content=result, headers=response_headers)
 
 # ==============================================================================
-# 5. Core 3 Endpoints (Dual GET + POST)
+# The 10 Clean Paid x402 Endpoints (Dual GET + POST)
 # ==============================================================================
-@app.get("/v1/stealth_scrape_and_sanitize")
-@app.post("/v1/stealth_scrape_and_sanitize")
+
+# 1. Stealth Scrape & Sanitize ($0.005 USDC)
+@app.get("/v1/stealth_scrape_and_sanitize", summary="Stealth Scrape & Sanitize", tags=["Security Gate & Extraction"])
+@app.post("/v1/stealth_scrape_and_sanitize", summary="Stealth Scrape & Sanitize", tags=["Security Gate & Extraction"])
 async def stealth_scrape_route(request: Request):
     return await execute_paid_tool(
         "stealth_scrape_and_sanitize",
@@ -408,8 +436,9 @@ async def stealth_scrape_route(request: Request):
         {"url": "https://news.ycombinator.com", "render_js": False, "strict_mode": True}
     )
 
-@app.get("/v1/polymarket_alpha_divergence")
-@app.post("/v1/polymarket_alpha_divergence")
+# 2. Polymarket Alpha Divergence ($0.008 USDC)
+@app.get("/v1/polymarket_alpha_divergence", summary="Polymarket Alpha Divergence", tags=["Alpha & Prediction Markets"])
+@app.post("/v1/polymarket_alpha_divergence", summary="Polymarket Alpha Divergence", tags=["Alpha & Prediction Markets"])
 async def polymarket_alpha_route(request: Request):
     return await execute_paid_tool(
         "polymarket_alpha_divergence",
@@ -417,8 +446,9 @@ async def polymarket_alpha_route(request: Request):
         {"category": "crypto", "limit": 15, "strict_mode": True}
     )
 
-@app.get("/v1/pre_trade_agent_gate")
-@app.post("/v1/pre_trade_agent_gate")
+# 3. Pre-Trade Agent Gate ($0.005 USDC)
+@app.get("/v1/pre_trade_agent_gate", summary="Pre-Trade Agent Safety Gate", tags=["Security Gate & Extraction"])
+@app.post("/v1/pre_trade_agent_gate", summary="Pre-Trade Agent Safety Gate", tags=["Security Gate & Extraction"])
 async def pre_trade_gate_route(request: Request):
     return await execute_paid_tool(
         "pre_trade_agent_gate",
@@ -426,88 +456,52 @@ async def pre_trade_gate_route(request: Request):
         {"token_or_service_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "chain": "base", "strict_mode": True}
     )
 
-# ==============================================================================
-# 6. 15 Micro-Priced Endpoints (x402Pulse $0.001 - $0.003 USDC)
-# ==============================================================================
-@app.get("/v1/alpha/polymarket-top-whales")
-@app.post("/v1/alpha/polymarket-top-whales")
+# 4. Polymarket Top Whales ($0.003 USDC)
+@app.get("/v1/alpha/polymarket-top-whales", summary="Polymarket Top Whale Imbalances", tags=["Alpha & Prediction Markets"])
+@app.post("/v1/alpha/polymarket-top-whales", summary="Polymarket Top Whale Imbalances", tags=["Alpha & Prediction Markets"])
 async def polymarket_top_whales_route(request: Request):
     return await execute_paid_tool("polymarket_top_whales", request, {})
 
-@app.get("/v1/alpha/polymarket-crypto-odds")
-@app.post("/v1/alpha/polymarket-crypto-odds")
+# 5. Polymarket Crypto Odds ($0.002 USDC)
+@app.get("/v1/alpha/polymarket-crypto-odds", summary="Polymarket Major Crypto Spreads", tags=["Alpha & Prediction Markets"])
+@app.post("/v1/alpha/polymarket-crypto-odds", summary="Polymarket Major Crypto Spreads", tags=["Alpha & Prediction Markets"])
 async def polymarket_crypto_odds_route(request: Request):
     return await execute_paid_tool("polymarket_crypto_odds", request, {})
 
-@app.get("/v1/alpha/polymarket-macro-fed")
-@app.post("/v1/alpha/polymarket-macro-fed")
-async def polymarket_macro_fed_route(request: Request):
-    return await execute_paid_tool("polymarket_macro_fed", request, {})
-
-@app.get("/v1/alpha/base-trending-tokens")
-@app.post("/v1/alpha/base-trending-tokens")
+# 6. Base Trending Tokens ($0.003 USDC)
+@app.get("/v1/alpha/base-trending-tokens", summary="Base Trending DEX Tokens", tags=["Alpha & Prediction Markets"])
+@app.post("/v1/alpha/base-trending-tokens", summary="Base Trending DEX Tokens", tags=["Alpha & Prediction Markets"])
 async def base_trending_tokens_route(request: Request):
     return await execute_paid_tool("base_trending_tokens", request, {})
 
-@app.get("/v1/alpha/base-new-pools")
-@app.post("/v1/alpha/base-new-pools")
-async def base_new_pools_route(request: Request):
-    return await execute_paid_tool("base_new_pools", request, {})
-
-@app.get("/v1/alpha/solana-trending-safe")
-@app.post("/v1/alpha/solana-trending-safe")
-async def solana_trending_safe_route(request: Request):
-    return await execute_paid_tool("solana_trending_safe", request, {})
-
-@app.get("/v1/alpha/defi-yield-radar")
-@app.post("/v1/alpha/defi-yield-radar")
+# 7. DeFi Yield Radar ($0.002 USDC)
+@app.get("/v1/alpha/defi-yield-radar", summary="DeFi Real-Time APY Radar", tags=["Alpha & Prediction Markets"])
+@app.post("/v1/alpha/defi-yield-radar", summary="DeFi Real-Time APY Radar", tags=["Alpha & Prediction Markets"])
 async def defi_yield_radar_route(request: Request):
     return await execute_paid_tool("defi_yield_radar", request, {})
 
-@app.get("/v1/alpha/crypto-sentiment-pulse")
-@app.post("/v1/alpha/crypto-sentiment-pulse")
-async def crypto_sentiment_pulse_route(request: Request):
-    return await execute_paid_tool("crypto_sentiment_pulse", request, {})
-
-@app.get("/v1/alpha/hackernews-ai-digest")
-@app.post("/v1/alpha/hackernews-ai-digest")
+# 8. HackerNews AI Digest ($0.002 USDC)
+@app.get("/v1/alpha/hackernews-ai-digest", summary="HackerNews AI Digest", tags=["Alpha & Prediction Markets"])
+@app.post("/v1/alpha/hackernews-ai-digest", summary="HackerNews AI Digest", tags=["Alpha & Prediction Markets"])
 async def hackernews_ai_digest_route(request: Request):
     return await execute_paid_tool("hackernews_ai_digest", request, {})
 
-@app.get("/v1/alpha/github-trending-agents")
-@app.post("/v1/alpha/github-trending-agents")
-async def github_trending_agents_route(request: Request):
-    return await execute_paid_tool("github_trending_agents", request, {})
-
-@app.get("/v1/alpha/arxiv-agent-papers")
-@app.post("/v1/alpha/arxiv-agent-papers")
-async def arxiv_agent_papers_route(request: Request):
-    return await execute_paid_tool("arxiv_agent_papers", request, {})
-
-@app.get("/v1/security/prompt-firewall")
-@app.post("/v1/security/prompt-firewall")
+# 9. Prompt Firewall ($0.001 USDC)
+@app.get("/v1/security/prompt-firewall", summary="Deterministic Prompt Firewall", tags=["Security Gate & Extraction"])
+@app.post("/v1/security/prompt-firewall", summary="Deterministic Prompt Firewall", tags=["Security Gate & Extraction"])
 async def security_prompt_firewall_route(request: Request):
     return await execute_paid_tool("security_prompt_firewall", request, {"text": "Test agent text"})
 
-@app.get("/v1/security/url-threat-check")
-@app.post("/v1/security/url-threat-check")
-async def security_url_threat_check_route(request: Request):
-    return await execute_paid_tool("security_url_threat_check", request, {"url": "https://example.com"})
-
-@app.get("/v1/security/x402-endpoint-verifier")
-@app.post("/v1/security/x402-endpoint-verifier")
+# 10. x402 Endpoint Verifier ($0.002 USDC)
+@app.get("/v1/security/x402-endpoint-verifier", summary="x402 Endpoint Authenticity Verifier", tags=["Security Gate & Extraction"])
+@app.post("/v1/security/x402-endpoint-verifier", summary="x402 Endpoint Authenticity Verifier", tags=["Security Gate & Extraction"])
 async def security_x402_endpoint_verifier_route(request: Request):
     return await execute_paid_tool("security_x402_endpoint_verifier", request, {"endpoint_url": f"{get_public_url()}/v1/stealth_scrape_and_sanitize"})
 
-@app.get("/v1/security/evm-calldata-firewall")
-@app.post("/v1/security/evm-calldata-firewall")
-async def security_evm_calldata_firewall_route(request: Request):
-    return await execute_paid_tool("security_evm_calldata_firewall", request, {"calldata": "0x095ea7b3"})
-
 # ==============================================================================
-# 7. MCP Streamable HTTP JSON-RPC endpoint
+# MCP Streamable HTTP JSON-RPC endpoint
 # ==============================================================================
-@app.post("/mcp")
+@app.post("/mcp", include_in_schema=False)
 async def mcp_post(request: Request):
     raw_payment_header = request.headers.get("PAYMENT-SIGNATURE") or request.headers.get("X-PAYMENT")
     try:
@@ -525,6 +519,106 @@ async def mcp_post(request: Request):
 
     return JSONResponse(content=response_data, headers=headers)
 
-@app.api_route("/mcp", methods=["GET", "PUT", "DELETE", "PATCH"])
+@app.api_route("/mcp", methods=["GET", "PUT", "DELETE", "PATCH"], include_in_schema=False)
 async def mcp_other_methods():
     raise HTTPException(status_code=405, detail="Method Not Allowed: MCP endpoint requires POST")
+
+# ==============================================================================
+# Custom OpenAPI Generator (Guarantees 100% Pass Rate on x402scan / tryponcho)
+# ==============================================================================
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    openapi_schema = get_openapi(
+        title="StealthGuard-402",
+        version="1.1.0",
+        description="Stealth web extraction and prediction-market/on-chain alpha fused with CanaryGuard prompt-injection firewall.",
+        routes=app.routes,
+    )
+    openapi_schema["info"]["contact"] = {
+        "name": "AK Kurox",
+        "email": "ak10082247@gmail.com",
+        "url": "https://github.com/ak10082247-max/stealthguard-402",
+    }
+
+    # Filter paths to strictly contain our 10 paid x402 endpoints
+    paid_paths = set(PAID_PATH_TO_TOOL.keys())
+    filtered_paths = {}
+    for path, path_item in openapi_schema.get("paths", {}).items():
+        if path in paid_paths:
+            tool_name = PAID_PATH_TO_TOOL[path]
+            pricing = TOOL_PRICING[tool_name]
+            for method, op in path_item.items():
+                if method.lower() in ("get", "post"):
+                    op["security"] = [{"x402Payment": []}]
+                    op["x-payment-info"] = {
+                        "network": NETWORK,
+                        "chainId": CHAIN_ID,
+                        "asset": ASSET,
+                        "currency": "USDC",
+                        "amount": pricing["amount_microunits"],
+                        "price": pricing["price_formatted"],
+                        "payTo": get_recipient_address(),
+                        "scheme": "exact",
+                        "facilitator": "https://api.cdp.coinbase.com/platform/v2/x402",
+                    }
+                    if "parameters" in op:
+                        for p in op["parameters"]:
+                            if p.get("in") == "query":
+                                p["required"] = True
+                    op["responses"] = op.get("responses", {})
+                    op["responses"]["402"] = {
+                        "description": f"Payment Required: {pricing['price_formatted']} on Base Mainnet",
+                        "headers": {
+                            "PAYMENT-REQUIRED": {
+                                "description": "Base64-encoded x402 v2 payment challenge",
+                                "schema": {"type": "string"},
+                            },
+                            "WWW-Authenticate": {
+                                "description": "IETF MPP Payment Challenge",
+                                "schema": {"type": "string"},
+                            },
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {"type": "string", "example": "payment_required"},
+                                        "x402Version": {"type": "integer", "example": 2},
+                                        "resource": {
+                                            "type": "object",
+                                            "properties": {
+                                                "url": {"type": "string", "example": f"https://stealthguard-402.onrender.com{pricing['path']}"},
+                                                "description": {"type": "string", "example": pricing["description"][:440]},
+                                                "mimeType": {"type": "string", "example": "application/json"},
+                                            },
+                                        },
+                                        "payTo": {"type": "string", "example": get_recipient_address()},
+                                        "amount": {"type": "string", "example": pricing["amount_microunits"]},
+                                        "asset": {"type": "string", "example": ASSET},
+                                        "network": {"type": "string", "example": NETWORK},
+                                        "chainId": {"type": "integer", "example": CHAIN_ID},
+                                        "price": {"type": "string", "example": pricing["price_formatted"]},
+                                    },
+                                },
+                            },
+                        },
+                    }
+            filtered_paths[path] = path_item
+
+    openapi_schema["paths"] = filtered_paths
+    openapi_schema["components"] = openapi_schema.get("components", {})
+    openapi_schema["components"]["securitySchemes"] = {
+        "x402Payment": {
+            "type": "apiKey",
+            "name": "PAYMENT-SIGNATURE",
+            "in": "header",
+            "description": "EIP-3009 TransferWithAuthorization authorization for Base USDC x402 payment",
+        }
+    }
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi

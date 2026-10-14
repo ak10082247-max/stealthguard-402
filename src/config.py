@@ -6,18 +6,18 @@ CHAIN_ID = 8453
 ASSET = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"  # Base USDC
 DEFAULT_RECIPIENT = "0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1"
 SERVICE_NAME = "StealthGuard-402"
-SERVICE_VERSION = "2.0.0"
+SERVICE_VERSION = "1.1.0"
 
-# Tool Pricing Specifications (x402Pulse 18-Endpoint Matrix + Free Sample)
+# 10 Clean Paid Endpoints Matrix (3 Core + 7 Micro, $0.001 - $0.008 USDC) + Free Discovery Probe
 TOOL_PRICING: Dict[str, Dict[str, Any]] = {
-    # 3 Core Endpoints (Refactored to high-velocity micro-pricing)
+    # 3 Core Endpoints
     "stealth_scrape_and_sanitize": {
         "amount_microunits": "5000",
         "price_usd": "0.005",
         "price_formatted": "0.005 USDC",
         "ppe_event_name": "stealth_scrape_and_sanitize",
         "ppe_event_count": 1,
-        "description": "MANDATORY SECURITY & DATA GATE: Bypasses Cloudflare/anti-bot via Scrapling StealthyFetcher, converts DOM to LLM Markdown/JSON, and runs CanaryGuard deterministic sanitization.",
+        "description": "Bypasses Cloudflare anti-bot via Scrapling, extracts clean DOM to LLM Markdown, and runs CanaryGuard deterministic sanitization.",
         "path": "/v1/stealth_scrape_and_sanitize",
         "category": "scraping",
     },
@@ -27,7 +27,7 @@ TOOL_PRICING: Dict[str, Dict[str, Any]] = {
         "price_formatted": "0.008 USDC",
         "ppe_event_name": "polymarket_alpha_divergence",
         "ppe_event_count": 1,
-        "description": "MANDATORY SECURITY & DATA GATE: Scans Polymarket Gamma + CLOB orderbooks for volume spikes and smart-money spread divergence, scrapes resolution sources via Scrapling, and sanitizes resolution text.",
+        "description": "Scans Polymarket CLOB orderbooks for volume spikes and smart-money spread divergence, returning CanaryGuard sanitized alpha.",
         "path": "/v1/polymarket_alpha_divergence",
         "category": "alpha",
     },
@@ -37,29 +37,19 @@ TOOL_PRICING: Dict[str, Dict[str, Any]] = {
         "price_formatted": "0.005 USDC",
         "ppe_event_name": "pre_trade_agent_gate",
         "ppe_event_count": 1,
-        "description": "MANDATORY SECURITY & DATA GATE: Deterministic TRUST / BLOCK gate combining on-chain DexScreener + Base/Solana RPC liquidity and honeypot inspection with CanaryGuard metadata injection scrubbing.",
+        "description": "Deterministic TRUST or BLOCK gate combining on-chain Base RPC liquidity and honeypot checks with CanaryGuard injection scrubbing.",
         "path": "/v1/pre_trade_agent_gate",
         "category": "security",
     },
-    "health_and_sample": {
-        "amount_microunits": "0",
-        "price_usd": "0.00",
-        "price_formatted": "0.00 USDC (Free)",
-        "ppe_event_name": "free_sample",
-        "ppe_event_count": 0,
-        "description": "MANDATORY SECURITY & DATA GATE: Free uptime probe and sample payload discovery tool for MCP registries (Glama, Smithery, x402Atlas, Apify).",
-        "path": "/v1/health_and_sample",
-        "category": "discovery",
-    },
 
-    # 15 High-Demand Pre-Warmed Micro-Endpoints ($0.001 - $0.003 USDC)
+    # 7 High-Frequency Micro-Endpoints ($0.001 - $0.003 USDC)
     "polymarket_top_whales": {
         "amount_microunits": "3000",
         "price_usd": "0.003",
         "price_formatted": "0.003 USDC",
         "ppe_event_name": "polymarket_top_whales",
         "ppe_event_count": 1,
-        "description": "Top 10 Polymarket whale orderbook imbalances and CLOB skew right now, pre-sanitized with CanaryGuard.",
+        "description": "Top Polymarket whale orderbook imbalances and CLOB skew right now, pre-sanitized with CanaryGuard.",
         "path": "/v1/alpha/polymarket-top-whales",
         "category": "alpha",
     },
@@ -69,18 +59,8 @@ TOOL_PRICING: Dict[str, Dict[str, Any]] = {
         "price_formatted": "0.002 USDC",
         "ppe_event_name": "polymarket_crypto_odds",
         "ppe_event_count": 1,
-        "description": "Sanitized BTC/ETH/SOL Polymarket odds, probability spreads, and liquidity depth in basis points.",
+        "description": "Sanitized BTC, ETH, and SOL Polymarket probability spreads and liquidity depth in basis points.",
         "path": "/v1/alpha/polymarket-crypto-odds",
-        "category": "alpha",
-    },
-    "polymarket_macro_fed": {
-        "amount_microunits": "2000",
-        "price_usd": "0.002",
-        "price_formatted": "0.002 USDC",
-        "ppe_event_name": "polymarket_macro_fed",
-        "ppe_event_count": 1,
-        "description": "Federal Reserve interest rate decisions & macro prediction market odds + sanitized resolution criteria.",
-        "path": "/v1/alpha/polymarket-macro-fed",
         "category": "alpha",
     },
     "base_trending_tokens": {
@@ -89,28 +69,8 @@ TOOL_PRICING: Dict[str, Dict[str, Any]] = {
         "price_formatted": "0.003 USDC",
         "ppe_event_name": "base_trending_tokens",
         "ppe_event_count": 1,
-        "description": "Top trending Base DEX pairs (DexScreener) pre-screened for honeypots, malicious taxes, and prompt injections.",
+        "description": "Top trending Base DEX pairs pre-screened for honeypots, malicious taxes, and prompt injections.",
         "path": "/v1/alpha/base-trending-tokens",
-        "category": "alpha",
-    },
-    "base_new_pools": {
-        "amount_microunits": "3000",
-        "price_usd": "0.003",
-        "price_formatted": "0.003 USDC",
-        "ppe_event_name": "base_new_pools",
-        "ppe_event_count": 1,
-        "description": "Newly created Base liquidity pools (last 2 hours) with automated TRUST/BLOCK verdict.",
-        "path": "/v1/alpha/base-new-pools",
-        "category": "alpha",
-    },
-    "solana_trending_safe": {
-        "amount_microunits": "3000",
-        "price_usd": "0.003",
-        "price_formatted": "0.003 USDC",
-        "ppe_event_name": "solana_trending_safe",
-        "ppe_event_count": 1,
-        "description": "Top trending Solana tokens screened via DexScreener + CanaryGuard token metadata injection scrubber.",
-        "path": "/v1/alpha/solana-trending-safe",
         "category": "alpha",
     },
     "defi_yield_radar": {
@@ -119,18 +79,8 @@ TOOL_PRICING: Dict[str, Dict[str, Any]] = {
         "price_formatted": "0.002 USDC",
         "ppe_event_name": "defi_yield_radar",
         "ppe_event_count": 1,
-        "description": "Live DeFiLlama top stablecoin & ETH APY yields on Base and Arbitrum, pre-sanitized for AI execution.",
+        "description": "Live top stablecoin and ETH APY yields on Base, pre-sanitized for autonomous AI agent execution.",
         "path": "/v1/alpha/defi-yield-radar",
-        "category": "alpha",
-    },
-    "crypto_sentiment_pulse": {
-        "amount_microunits": "2000",
-        "price_usd": "0.002",
-        "price_formatted": "0.002 USDC",
-        "ppe_event_name": "crypto_sentiment_pulse",
-        "ppe_event_count": 1,
-        "description": "Real-time crypto Fear & Greed index + funding rate skew + injection-free top news headlines.",
-        "path": "/v1/alpha/crypto-sentiment-pulse",
         "category": "alpha",
     },
     "hackernews_ai_digest": {
@@ -139,28 +89,8 @@ TOOL_PRICING: Dict[str, Dict[str, Any]] = {
         "price_formatted": "0.002 USDC",
         "ppe_event_name": "hackernews_ai_digest",
         "ppe_event_count": 1,
-        "description": "Top 15 HackerNews AI and autonomous agent stories converted to clean, injection-free LLM Markdown.",
+        "description": "Top HackerNews AI and autonomous agent stories converted to clean, injection-free LLM Markdown.",
         "path": "/v1/alpha/hackernews-ai-digest",
-        "category": "alpha",
-    },
-    "github_trending_agents": {
-        "amount_microunits": "2000",
-        "price_usd": "0.002",
-        "price_formatted": "0.002 USDC",
-        "ppe_event_name": "github_trending_agents",
-        "ppe_event_count": 1,
-        "description": "Top trending GitHub AI agent & MCP tool repositories today with sanitized descriptions and README summaries.",
-        "path": "/v1/alpha/github-trending-agents",
-        "category": "alpha",
-    },
-    "arxiv_agent_papers": {
-        "amount_microunits": "2000",
-        "price_usd": "0.002",
-        "price_formatted": "0.002 USDC",
-        "ppe_event_name": "arxiv_agent_papers",
-        "ppe_event_count": 1,
-        "description": "Latest ArXiv AI agent security and autonomous reasoning papers, sanitized and summarized for context windows.",
-        "path": "/v1/alpha/arxiv-agent-papers",
         "category": "alpha",
     },
     "security_prompt_firewall": {
@@ -169,18 +99,8 @@ TOOL_PRICING: Dict[str, Dict[str, Any]] = {
         "price_formatted": "0.001 USDC",
         "ppe_event_name": "security_prompt_firewall",
         "ppe_event_count": 1,
-        "description": "Ultra-fast $0.001 deterministic prompt-injection & wallet-drainer scrubber for raw agent context windows.",
+        "description": "Ultra-fast deterministic prompt-injection and wallet-drainer scrubber for agent context windows.",
         "path": "/v1/security/prompt-firewall",
-        "category": "security",
-    },
-    "security_url_threat_check": {
-        "amount_microunits": "2000",
-        "price_usd": "0.002",
-        "price_formatted": "0.002 USDC",
-        "ppe_event_name": "security_url_threat_check",
-        "ppe_event_count": 1,
-        "description": "Instant URL phishing, unicode homograph, redirect loop, and hidden-DOM prompt injection audit.",
-        "path": "/v1/security/url-threat-check",
         "category": "security",
     },
     "security_x402_endpoint_verifier": {
@@ -189,19 +109,21 @@ TOOL_PRICING: Dict[str, Dict[str, Any]] = {
         "price_formatted": "0.002 USDC",
         "ppe_event_name": "security_x402_endpoint_verifier",
         "ppe_event_count": 1,
-        "description": "Audits any target x402 endpoint's 402 challenge, payTo wallet, amount, and schema for hijack/overcharge risks.",
+        "description": "Audits target x402 endpoints for authentic payTo wallet, pricing, challenge headers, and schema hijack risks.",
         "path": "/v1/security/x402-endpoint-verifier",
         "category": "security",
     },
-    "security_evm_calldata_firewall": {
-        "amount_microunits": "2000",
-        "price_usd": "0.002",
-        "price_formatted": "0.002 USDC",
-        "ppe_event_name": "security_evm_calldata_firewall",
-        "ppe_event_count": 1,
-        "description": "Decodes and inspects EVM transaction calldata / ABI payloads for unauthorized approvals, permit signatures, or drainer selectors.",
-        "path": "/v1/security/evm-calldata-firewall",
-        "category": "security",
+
+    # Free Sample Probe (discovery only, include_in_schema=False)
+    "health_and_sample": {
+        "amount_microunits": "0",
+        "price_usd": "0.00",
+        "price_formatted": "0.00 USDC (Free)",
+        "ppe_event_name": "free_sample",
+        "ppe_event_count": 0,
+        "description": "Free uptime probe and sample payload discovery tool for MCP registries.",
+        "path": "/v1/health_and_sample",
+        "category": "discovery",
     },
 }
 

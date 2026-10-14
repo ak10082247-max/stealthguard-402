@@ -4,6 +4,36 @@ import httpx
 from src.api import app
 
 @pytest.mark.asyncio
+async def test_api_favicon_and_openapi_contact():
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+        # GET /favicon.ico
+        r_fav = await client.get("/favicon.ico")
+        assert r_fav.status_code == 200
+        assert "image/x-icon" in r_fav.headers.get("content-type", "")
+
+        # HEAD /favicon.ico
+        r_fav_head = await client.head("/favicon.ico")
+        assert r_fav_head.status_code == 200
+
+        # GET /openapi.json
+        r_spec = await client.get("/openapi.json")
+        assert r_spec.status_code == 200
+        spec = r_spec.json()
+        assert spec["info"]["contact"]["email"] == "ak10082247@gmail.com"
+        assert spec["info"]["contact"]["name"] == "AK Kurox"
+
+        # Exactly 10 clean paid endpoints in paths (zero non-paid plumbing routes)
+        paths = spec["paths"]
+        assert len(paths) == 10
+        for path, item in paths.items():
+            assert path.startswith("/v1/")
+            for method, op in item.items():
+                if method in ("get", "post"):
+                    assert "x-payment-info" in op
+                    assert "402" in op["responses"]
+                    assert "200" in op["responses"]
+
+@pytest.mark.asyncio
 async def test_api_health_and_stats():
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
         r_health = await client.get("/health")
@@ -14,7 +44,7 @@ async def test_api_health_and_stats():
         r_stats = await client.get("/stats")
         assert r_stats.status_code == 200
         assert "pricing" in r_stats.json()
-        assert r_stats.json()["total_endpoints"] >= 19
+        assert r_stats.json()["total_endpoints"] >= 10
 
 @pytest.mark.asyncio
 async def test_api_x402_manifest_and_discovery():
@@ -23,7 +53,7 @@ async def test_api_x402_manifest_and_discovery():
         assert r_manifest.status_code == 200
         data = r_manifest.json()
         assert data["x402Version"] == 2
-        assert len(data["endpoints"]) >= 18
+        assert len(data["endpoints"]) == 10
         assert "bazaar" in data["endpoints"][0]["extensions"]
 
         # Check agent-card endpoint
@@ -39,6 +69,7 @@ async def test_api_unpaid_endpoints_return_402_both_get_and_post():
         assert r_scrape_post.status_code == 402
         assert "PAYMENT-REQUIRED" in r_scrape_post.headers
         assert r_scrape_post.headers["X-402-Amount"] == "0.005"
+        assert "WWW-Authenticate" in r_scrape_post.headers
 
         # GET Scrape
         r_scrape_get = await client.get("/v1/stealth_scrape_and_sanitize?url=https://example.com")
@@ -79,7 +110,7 @@ async def test_api_mcp_streamable_http():
         r_tools = await client.post("/mcp", json={"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}})
         assert r_tools.status_code == 200
         tools = r_tools.json()["result"]["tools"]
-        assert len(tools) >= 19
+        assert len(tools) >= 10
 
 @pytest.mark.asyncio
 async def test_sub_50ms_cache_warmer_latency():

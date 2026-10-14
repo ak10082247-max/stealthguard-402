@@ -5,11 +5,40 @@ import logging
 import os
 import secrets
 import time
+import uuid
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional, Tuple
 from eth_account import Account
 from eth_account.messages import encode_typed_data
 import httpx
 import jwt
+
+def enforce_https(url: str) -> str:
+    """Enforces https:// on URLs in production or hosted on Render."""
+    if not url:
+        return url
+    if url.startswith("http://") and ("onrender.com" in url or not ("localhost" in url or "127.0.0.1" in url or "test" in url)):
+        return "https://" + url[7:]
+    return url
+
+def build_ietf_mpp_www_authenticate(amount_units: str, recipient: str, realm: str = "stealthguard-402.onrender.com") -> str:
+    """
+    Constructs an IETF MPP compliant WWW-Authenticate header:
+    WWW-Authenticate: Payment id="<uuid>", realm="stealthguard-402.onrender.com", method="evm", intent="charge", request="<base64url_no_pad_json>", expires="<iso8601_utc_plus_5m>"
+    """
+    challenge_id = str(uuid.uuid4())
+    req_dict = {
+        "amount": str(amount_units),
+        "chainId": CHAIN_ID,
+        "currency": ASSET,
+        "decimals": 6,
+        "recipient": recipient,
+    }
+    canonical_json = json.dumps(req_dict, separators=(",", ":"), sort_keys=True)
+    req_b64url = base64.urlsafe_b64encode(canonical_json.encode("utf-8")).decode("utf-8").rstrip("=")
+    expires = (datetime.now(timezone.utc) + timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return f'Payment id="{challenge_id}", realm="{realm}", method="evm", intent="charge", request="{req_b64url}", expires="{expires}"'
+
 
 from .config import (
     NETWORK,
@@ -297,14 +326,15 @@ def build_402_challenge(
     """
     Builds the standardized HTTP 402 challenge response headers and body
     compliant with x402 v2 and v1 specifications on Base (eip155:8453).
-    Includes full resource URL and complete @x402/extensions/bazaar block.
+    Includes full resource object schema, https URL enforcement, and IETF MPP WWW-Authenticate header.
     """
     pricing = TOOL_PRICING.get(tool_name, TOOL_PRICING["stealth_scrape_and_sanitize"])
     pay_to = get_recipient_address()
-    res_url = resource_url or f"{get_public_url()}{pricing.get('path', '')}"
+    raw_res_url = resource_url or f"{get_public_url()}{pricing.get('path', '')}"
+    res_url = enforce_https(raw_res_url)
     amount_units = pricing["amount_microunits"]
     price_usd = pricing["price_usd"]
-    desc = pricing["description"]
+    desc = pricing.get("description", "")[:440]
 
     discovery = build_bazaar_extension(
         tool_name=tool_name,
@@ -314,8 +344,15 @@ def build_402_challenge(
         example_input=example_input,
     )
 
+    resource_obj = {
+        "url": res_url,
+        "description": desc,
+        "mimeType": "application/json",
+    }
+
     challenge_payload = {
         "x402Version": 2,
+        "resource": resource_obj,
         "accepts": [
             {
                 "scheme": "exact",
@@ -326,7 +363,6 @@ def build_402_challenge(
                 "maxTimeoutSeconds": 300,
                 "payTo": pay_to,
                 "extra": {"name": "USD Coin", "version": "2"},
-                "resource": res_url,
                 "description": desc,
                 "mimeType": "application/json",
                 "bazaar": {
@@ -337,7 +373,6 @@ def build_402_challenge(
                 },
             }
         ],
-        "resource": res_url,
         "description": desc,
         "mimeType": "application/json",
         "serviceName": SERVICE_NAME,
@@ -349,8 +384,10 @@ def build_402_challenge(
     challenge_json = json.dumps(challenge_payload)
     challenge_b64 = base64.b64encode(challenge_json.encode("utf-8")).decode("utf-8")
 
+    www_auth = build_ietf_mpp_www_authenticate(amount_units, pay_to)
+
     headers = {
-        "WWW-Authenticate": f'x402 challenge="base-usdc-{amount_units}"',
+        "WWW-Authenticate": www_auth,
         "X-402-Version": "2",
         "X-402-Payment-To": pay_to,
         "X-402-Amount": price_usd,
@@ -362,32 +399,36 @@ def build_402_challenge(
         "X-Payment-Required": challenge_b64,
         "X-402-Payment-Required": challenge_b64,
         "Access-Control-Expose-Headers": (
-            "WWW-Authenticate, X-PAYMENT, PAYMENT-SIGNATURE, X-402-Version, "
-            "PAYMENT-REQUIRED, X-Payment-Required, X-402-Payment-Required, "
-            "PAYMENT-RESPONSE, X-402-Payment-To, X-402-Amount, X-402-Amount-Units, "
+            "PAYMENT-REQUIRED, PAYMENT-RESPONSE, WWW-Authenticate, Payment-Receipt, "
+            "X-PAYMENT, PAYMENT-SIGNATURE, X-402-Version, "
+            "X-Payment-Required, X-402-Payment-Required, "
+            "X-402-Payment-To, X-402-Amount, X-402-Amount-Units, "
             "X-402-Asset, X-402-Network, X-402-Chain-Id"
         ),
     }
 
     body = {
         "error": "payment_required",
+        "x402Version": 2,
         "x402_version": "2",
+        "resource": resource_obj,
+        "accepts": challenge_payload["accepts"],
         "payTo": pay_to,
         "amount": amount_units,
         "asset": ASSET,
         "network": NETWORK,
         "chainId": CHAIN_ID,
         "price": f"{price_usd} USDC",
-        "resource": res_url,
         "description": desc,
         "mimeType": "application/json",
-        "facilitator": "https://api.cdp.coinbase.com/platform/mobile/x402",
+        "facilitator": "https://api.cdp.coinbase.com/platform/v2/x402",
         "extensions": discovery,
     }
     if reason:
         body["details"] = reason
 
     return headers, body
+
 
 def verify_x402_payment(
     raw_header: Optional[str],
@@ -405,8 +446,9 @@ def verify_x402_payment(
     pricing = TOOL_PRICING.get(tool_name, TOOL_PRICING["stealth_scrape_and_sanitize"])
     required_units = int(pricing["amount_microunits"])
     pay_to = get_recipient_address().lower()
-    res_url = resource_url or f"{get_public_url()}{pricing.get('path', '')}"
-    desc = pricing.get("description", "")
+    raw_res_url = resource_url or f"{get_public_url()}{pricing.get('path', '')}"
+    res_url = enforce_https(raw_res_url)
+    desc = pricing.get("description", "")[:440]
     discovery = build_bazaar_extension(tool_name, desc, mode="http")
 
     # Free tool bypass
@@ -569,6 +611,11 @@ def verify_x402_payment(
         return True, payment_info, None, 200
 
     # Production on-chain settlement via Coinbase CDP Facilitator
+    resource_obj = {
+        "url": res_url,
+        "description": desc,
+        "mimeType": "application/json",
+    }
     payment_requirements = {
         "scheme": "exact",
         "network": NETWORK,
@@ -580,7 +627,7 @@ def verify_x402_payment(
             "name": "USD Coin",
             "version": "2",
         },
-        "resource": res_url,
+        "resource": resource_obj,
         "description": desc,
         "mimeType": "application/json",
         "extensions": discovery,
