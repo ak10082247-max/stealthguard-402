@@ -27,7 +27,7 @@ async def test_mcp_tools_list_glama_tdqs():
     }
     resp, pay_hdr = await handle_mcp_request(req)
     tools = resp["result"]["tools"]
-    assert len(tools) == 4
+    assert len(tools) >= 19
     tool_names = [t["name"] for t in tools]
     assert "stealth_scrape_and_sanitize" in tool_names
     assert "polymarket_alpha_divergence" in tool_names

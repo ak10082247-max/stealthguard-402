@@ -9,5 +9,6 @@ __pycache__/
 storage/
 apify_storage/
 dist/
-node_modules/
 .github/
+RENDER_ENV_VARS_TO_PASTE.env
+*.key.json

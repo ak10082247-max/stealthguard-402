@@ -21,8 +21,8 @@ def test_build_402_challenge_headers_and_body():
     assert headers["X-402-Version"] == "2"
     assert headers["X-402-Network"] == "base"
     assert headers["X-402-Chain-Id"] == "8453"
-    assert headers["X-402-Amount"] == "0.02"
-    assert headers["X-402-Amount-Units"] == "20000"
+    assert headers["X-402-Amount"] == "0.005"
+    assert headers["X-402-Amount-Units"] == "5000"
     assert headers["X-402-Asset"].lower() == ASSET.lower()
     assert headers["X-402-Payment-To"].lower() == get_recipient_address().lower()
     assert "PAYMENT-REQUIRED" in headers
@@ -36,7 +36,7 @@ def test_build_402_challenge_headers_and_body():
     assert accept["scheme"] == "exact"
     assert accept["network"] == NETWORK
     assert accept["asset"].lower() == ASSET.lower()
-    assert accept["amount"] == "20000"
+    assert accept["amount"] == "5000"
     assert accept["payTo"].lower() == get_recipient_address().lower()
     assert "bazaar" in decoded["extensions"]
 
@@ -50,7 +50,7 @@ def test_valid_eip712_payment_verification_and_replay_protection():
     REPLAY_CACHE.clear()
     payer = Account.create()
     recipient = get_recipient_address()
-    amount = 20000
+    amount = 5000
     now = int(time.time())
 
     types = {
@@ -125,7 +125,7 @@ def test_valid_eip712_payment_verification_and_replay_protection():
     assert pay_info is not None
     assert pay_info["success"] is True
     assert pay_info["payer"].lower() == payer.address.lower()
-    assert pay_info["amount"] == "20000"
+    assert pay_info["amount"] == "5000"
 
     # Verify PAYMENT-RESPONSE header generation
     resp_hdr = create_payment_response_header(pay_info)

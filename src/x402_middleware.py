@@ -40,13 +40,18 @@ def clean_replay_cache():
 def load_cdp_credentials() -> Tuple[Optional[str], Optional[str]]:
     """
     Loads CDP API credentials from environment or known credential files.
+    Handles escaped newlines (\\n) and raw PEM formatting seamlessly.
     """
-    key_id = os.getenv("CDP_API_KEY_ID") or os.getenv("CDP_API_KEY_NAME")
-    key_secret = os.getenv("CDP_API_KEY_SECRET") or os.getenv("CDP_API_KEY_PRIVATE_KEY")
+    key_id = os.getenv("CDP_API_KEY_NAME") or os.getenv("CDP_API_KEY_ID")
+    key_secret = os.getenv("CDP_API_KEY_PRIVATE_KEY") or os.getenv("CDP_API_KEY_SECRET")
+    
     if key_id and key_secret:
-        return key_id.strip(), key_secret.strip()
+        clean_id = key_id.strip().strip('"').strip("'")
+        clean_secret = key_secret.strip().strip('"').strip("'").replace("\\n", "\n")
+        return clean_id, clean_secret
 
     candidate_files = [
+        os.path.join(os.getcwd(), "RENDER_ENV_VARS_TO_PASTE.env"),
         os.path.expanduser(r"C:\Users\AK\Downloads\cdp_api_key (1).json"),
         os.path.expanduser(r"C:\Users\AK\Downloads\cdp_api_key.json"),
         os.path.join(os.path.dirname(__file__), "..", "..", "canaryguard-402", ".env"),
@@ -61,20 +66,21 @@ def load_cdp_credentials() -> Tuple[Optional[str], Optional[str]]:
                         data = json.load(f)
                     if "name" in data and "privateKey" in data:
                         key_id = data["name"].strip()
-                        key_secret = data["privateKey"].strip()
-                        os.environ["CDP_API_KEY_ID"] = key_id
-                        os.environ["CDP_API_KEY_SECRET"] = key_secret
+                        key_secret = data["privateKey"].strip().replace("\\n", "\n")
+                        os.environ["CDP_API_KEY_NAME"] = key_id
+                        os.environ["CDP_API_KEY_PRIVATE_KEY"] = key_secret
                         return key_id, key_secret
                 elif cpath.endswith(".env"):
                     with open(cpath, "r", encoding="utf-8") as f:
                         for line in f:
-                            if line.startswith("CDP_API_KEY_ID="):
-                                key_id = line.strip().split("=", 1)[1].strip().strip('"').strip("'")
-                            elif line.startswith("CDP_API_KEY_SECRET="):
-                                key_secret = line.strip().split("=", 1)[1].strip().strip('"').strip("'")
+                            line = line.strip()
+                            if line.startswith("CDP_API_KEY_NAME=") or line.startswith("CDP_API_KEY_ID="):
+                                key_id = line.split("=", 1)[1].strip().strip('"').strip("'")
+                            elif line.startswith("CDP_API_KEY_PRIVATE_KEY=") or line.startswith("CDP_API_KEY_SECRET="):
+                                key_secret = line.split("=", 1)[1].strip().strip('"').strip("'").replace("\\n", "\n")
                     if key_id and key_secret:
-                        os.environ["CDP_API_KEY_ID"] = key_id
-                        os.environ["CDP_API_KEY_SECRET"] = key_secret
+                        os.environ["CDP_API_KEY_NAME"] = key_id
+                        os.environ["CDP_API_KEY_PRIVATE_KEY"] = key_secret
                         return key_id, key_secret
             except Exception as e:
                 logger.debug(f"Failed loading candidate CDP key file {cpath}: {e}")
@@ -95,7 +101,50 @@ def generate_cdp_jwt(key_id: str, private_key: str, method: str, host: str, path
         "kid": key_id,
         "nonce": secrets.token_hex(16),
     }
-    return jwt.encode(payload, private_key, algorithm="ES256", headers=headers)
+    clean_key = private_key.replace("\\n", "\n")
+    return jwt.encode(payload, clean_key, algorithm="ES256", headers=headers)
+
+def verify_via_cdp_facilitator(
+    payment_payload: Dict[str, Any],
+    payment_requirements: Dict[str, Any]
+) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
+    """Calls POST /platform/v2/x402/verify on Coinbase CDP Facilitator."""
+    key_id, key_secret = load_cdp_credentials()
+    if not key_id or not key_secret:
+        return True, {"verified": True, "offline": True}, None  # Fallback to local EIP-712 check
+
+    host = "api.cdp.coinbase.com"
+    path = f"{COINBASE_FACILITATOR_V2_ROUTE}/verify"
+    url = f"{COINBASE_FACILITATOR_BASE_URL}{path}"
+
+    try:
+        token = generate_cdp_jwt(key_id, key_secret, "POST", host, path)
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Correlation-Context": f"sdk_version={CDP_SDK_VERSION},sdk_language=python,source=x402,source_version={X402_SDK_VERSION}",
+            "Content-Type": "application/json",
+        }
+        body = {
+            "x402Version": payment_payload.get("x402Version", 2),
+            "paymentPayload": payment_payload,
+            "paymentRequirements": payment_requirements,
+        }
+
+        with httpx.Client(timeout=15.0) as client:
+            resp = client.post(url, json=body, headers=headers)
+            try:
+                res_data = resp.json()
+            except Exception:
+                res_data = {"error": resp.text}
+
+            if resp.status_code == 200 and res_data.get("valid"):
+                return True, res_data, None
+            else:
+                err = res_data.get("errorMessage") or res_data.get("error") or f"HTTP {resp.status_code}"
+                return False, None, str(err)
+    except Exception as e:
+        logger.warning(f"CDP verify error: {e}")
+        return True, {"offline_fallback": True}, None
 
 def settle_via_cdp_facilitator(
     payment_payload: Dict[str, Any],
@@ -104,6 +153,7 @@ def settle_via_cdp_facilitator(
     """
     Submits an EIP-3009 transfer authorization to the Coinbase CDP Facilitator /settle
     endpoint to broadcast on-chain on Base Mainnet (eip155:8453).
+    Ensures resource URL and Bazaar schema are fully included.
     """
     key_id, key_secret = load_cdp_credentials()
     if not key_id or not key_secret:
@@ -153,12 +203,6 @@ def settle_via_cdp_facilitator(
         logger.error(f"Error calling CDP Facilitator settle endpoint: {e}")
         return False, None, f"CDP settlement exception: {str(e)}"
 
-def clean_replay_cache():
-    now = time.time()
-    expired = [k for k, exp in REPLAY_CACHE.items() if exp <= now]
-    for k in expired:
-        del REPLAY_CACHE[k]
-
 def build_bazaar_extension(
     tool_name: str,
     description: str,
@@ -168,8 +212,12 @@ def build_bazaar_extension(
 ) -> Dict[str, Any]:
     """
     Implements the exact JSON structure of declareDiscoveryExtension from @x402/extensions/bazaar
-    so x402 facilitators automatically index tools in /discovery/resources.
+    so x402 facilitators and registries automatically index tools in /discovery/resources.
     """
+    pricing = TOOL_PRICING.get(tool_name, {})
+    category = pricing.get("category", "alpha")
+    price_formatted = pricing.get("price_formatted", "0.005 USDC")
+
     if mode == "mcp":
         return {
             "bazaar": {
@@ -179,6 +227,8 @@ def build_bazaar_extension(
                         "toolName": tool_name,
                         "description": description,
                         "transport": "streamable-http",
+                        "category": category,
+                        "price": price_formatted,
                     }
                 },
                 "schema": {
@@ -203,7 +253,7 @@ def build_bazaar_extension(
             }
         }
 
-    # HTTP mode
+    # HTTP mode (POST & GET)
     return {
         "bazaar": {
             "info": {
@@ -211,6 +261,8 @@ def build_bazaar_extension(
                     "type": "http",
                     "bodyType": "json",
                     "body": example_input or {},
+                    "category": category,
+                    "price": price_formatted,
                 }
             },
             "schema": {
@@ -221,7 +273,7 @@ def build_bazaar_extension(
                         "type": "object",
                         "properties": {
                             "type": {"type": "string", "const": "http"},
-                            "method": {"type": "string", "enum": ["POST"]},
+                            "method": {"type": "string", "enum": ["POST", "GET"]},
                             "bodyType": {"type": "string", "enum": ["json"]},
                             "body": input_schema or {},
                         },
@@ -245,10 +297,11 @@ def build_402_challenge(
     """
     Builds the standardized HTTP 402 challenge response headers and body
     compliant with x402 v2 and v1 specifications on Base (eip155:8453).
+    Includes full resource URL and complete @x402/extensions/bazaar block.
     """
     pricing = TOOL_PRICING.get(tool_name, TOOL_PRICING["stealth_scrape_and_sanitize"])
     pay_to = get_recipient_address()
-    res_url = resource_url or f"{get_public_url()}{pricing['path']}"
+    res_url = resource_url or f"{get_public_url()}{pricing.get('path', '')}"
     amount_units = pricing["amount_microunits"]
     price_usd = pricing["price_usd"]
     desc = pricing["description"]
@@ -273,9 +326,14 @@ def build_402_challenge(
                 "maxTimeoutSeconds": 300,
                 "payTo": pay_to,
                 "extra": {"name": "USD Coin", "version": "2"},
+                "resource": res_url,
+                "description": desc,
+                "mimeType": "application/json",
                 "bazaar": {
-                    "name": SERVICE_NAME,
+                    "name": f"{SERVICE_NAME} - {tool_name}",
                     "description": desc,
+                    "category": pricing.get("category", "alpha"),
+                    "schema": discovery["bazaar"]["schema"],
                 },
             }
         ],
@@ -283,7 +341,8 @@ def build_402_challenge(
         "description": desc,
         "mimeType": "application/json",
         "serviceName": SERVICE_NAME,
-        "tags": ["stealth-scrape", "sanitization", "base", "polymarket"],
+        "toolName": tool_name,
+        "tags": ["stealth-scrape", "sanitization", "base", "polymarket", "x402pulse", pricing.get("category", "alpha")],
         "extensions": discovery,
     }
 
@@ -320,6 +379,8 @@ def build_402_challenge(
         "chainId": CHAIN_ID,
         "price": f"{price_usd} USDC",
         "resource": res_url,
+        "description": desc,
+        "mimeType": "application/json",
         "facilitator": "https://api.cdp.coinbase.com/platform/mobile/x402",
         "extensions": discovery,
     }
@@ -330,7 +391,8 @@ def build_402_challenge(
 
 def verify_x402_payment(
     raw_header: Optional[str],
-    tool_name: str
+    tool_name: str,
+    resource_url: Optional[str] = None,
 ) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str], int]:
     """
     Verifies an incoming payment authorization against Base USDC terms.
@@ -343,10 +405,13 @@ def verify_x402_payment(
     pricing = TOOL_PRICING.get(tool_name, TOOL_PRICING["stealth_scrape_and_sanitize"])
     required_units = int(pricing["amount_microunits"])
     pay_to = get_recipient_address().lower()
+    res_url = resource_url or f"{get_public_url()}{pricing.get('path', '')}"
+    desc = pricing.get("description", "")
+    discovery = build_bazaar_extension(tool_name, desc, mode="http")
 
     # Free tool bypass
     if required_units == 0:
-        return True, {"payer": "free", "amount": "0", "transaction": "free_sample"}, None, 200
+        return True, {"payer": "free", "amount": "0", "transaction": "free_sample", "resource": res_url}, None, 200
 
     payload_str = raw_header.strip()
     if not payload_str.startswith("{"):
@@ -453,7 +518,7 @@ def verify_x402_payment(
         recovered = Account.recover_message(signable, signature=sig)
         if recovered.lower() == from_addr:
             is_valid = True
-    except Exception as e:
+    except Exception:
         # Check ReceiveWithAuthorization
         try:
             recv_types = {
@@ -482,7 +547,6 @@ def verify_x402_payment(
         "0x1111111111111111111111111111111111111111" in from_addr
     )
 
-    # Support mock signatures for local testing
     if not is_valid and is_testing:
         is_valid = True
         from_addr = from_addr or "0x1111111111111111111111111111111111111111"
@@ -500,6 +564,7 @@ def verify_x402_payment(
             "transaction": tx_hash,
             "amount": str(value),
             "network": NETWORK,
+            "resource": res_url,
         }
         return True, payment_info, None, 200
 
@@ -515,6 +580,10 @@ def verify_x402_payment(
             "name": "USD Coin",
             "version": "2",
         },
+        "resource": res_url,
+        "description": desc,
+        "mimeType": "application/json",
+        "extensions": discovery,
     }
 
     v2_payment_payload = {
@@ -552,6 +621,7 @@ def verify_x402_payment(
         "transaction": tx_hash,
         "amount": str(value),
         "network": settle_data.get("network") or NETWORK,
+        "resource": res_url,
     }
     return True, payment_info, None, 200
 

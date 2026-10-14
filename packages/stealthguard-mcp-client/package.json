@@ -1,0 +1,13 @@
+{
+  "name": "@stealthguard/mcp-client",
+  "version": "1.0.0",
+  "description": "Standardized streamable HTTP proxy client for StealthGuard-402 MCP server on Base",
+  "main": "index.js",
+  "bin": {
+    "stealthguard-mcp": "index.js"
+  },
+  "keywords": ["mcp", "model-context-protocol", "x402", "base", "stealth-scraping", "polymarket"],
+  "author": "AK",
+  "license": "MIT",
+  "dependencies": {}
+}
