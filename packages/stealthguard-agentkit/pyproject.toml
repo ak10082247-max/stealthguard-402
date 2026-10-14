@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stealthguard-agentkit"
+version = "1.0.0"
+description = "Coinbase AgentKit Action Provider for StealthGuard-402, CanaryGuard, and RugShield on Base Mainnet"
+authors = [{ name = "AK Kurox", email = "ak10082247@gmail.com" }]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "cdp-agentkit-core>=0.0.8",
+    "pydantic>=2.0",
+    "httpx>=0.25.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/ak10082247-max/stealthguard-402"
+Repository = "https://github.com/ak10082247-max/stealthguard-402"

@@ -1,0 +1,32 @@
+{
+  "name": "@elizaos/plugin-stealthguard",
+  "version": "1.0.0",
+  "description": "Official ElizaOS plugin for StealthGuard-402, CanaryGuard, and RugShield on Base Mainnet",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup index.ts --format cjs,esm --dts",
+    "test": "echo \"Ready for ElizaOS runtime injection\""
+  },
+  "keywords": [
+    "elizaos",
+    "ai16z",
+    "x402",
+    "coinbase-agentkit",
+    "base",
+    "polymarket",
+    "stealth-scraping",
+    "canaryguard",
+    "rugshield"
+  ],
+  "author": "AK Kurox <ak10082247@gmail.com>",
+  "license": "MIT",
+  "peerDependencies": {
+    "@elizaos/core": ">=0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "tsup": "^8.0.2"
+  }
+}

@@ -211,6 +211,74 @@ async def llms_txt():
     lines.append(f"- POST {public_url}/mcp: Streamable HTTP Model Context Protocol JSON-RPC")
     return "\n".join(lines)
 
+@app.get("/llms-full.txt", response_class=PlainTextResponse, include_in_schema=False)
+async def llms_full_txt():
+    full_path = os.path.join(os.path.dirname(__file__), "..", "public", "llms-full.txt")
+    if os.path.exists(full_path):
+        with open(full_path, "r", encoding="utf-8") as f:
+            return f.read()
+    return await llms_txt()
+
+@app.get("/robots.txt", response_class=PlainTextResponse, include_in_schema=False)
+async def robots_txt():
+    public_url = get_public_url()
+    return (
+        "User-agent: *\n"
+        "Allow: /\n\n"
+        "User-agent: GPTBot\n"
+        "Allow: /\n\n"
+        "User-agent: ClaudeBot\n"
+        "Allow: /\n\n"
+        "User-agent: PerplexityBot\n"
+        "Allow: /\n\n"
+        "User-agent: Google-Extended\n"
+        "Allow: /\n\n"
+        f"Sitemap: {public_url}/sitemap.xml\n"
+    )
+
+@app.get("/sitemap.xml", response_class=Response, include_in_schema=False)
+async def sitemap_xml():
+    public_url = get_public_url()
+    urls = [
+        f"{public_url}/",
+        f"{public_url}/llms.txt",
+        f"{public_url}/llms-full.txt",
+        f"{public_url}/.well-known/x402.json",
+        f"{public_url}/.well-known/agent-card.json",
+        f"{public_url}/.well-known/ai-plugin.json",
+        f"{public_url}/openapi.json",
+    ]
+    for p in TOOL_PRICING.values():
+        if p.get("amount_microunits") != "0":
+            urls.append(f"{public_url}{p['path']}")
+    xml_lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+    for u in urls:
+        xml_lines.append(f"  <url><loc>{u}</loc><changefreq>hourly</changefreq></url>")
+    xml_lines.append("</urlset>")
+    return Response(content="\n".join(xml_lines), media_type="application/xml")
+
+@app.get("/.well-known/ai-plugin.json", include_in_schema=False)
+async def ai_plugin_manifest():
+    public_url = get_public_url()
+    return {
+        "schema_version": "v1",
+        "name_for_model": "stealthguard_402",
+        "name_for_human": "StealthGuard-402",
+        "description_for_model": "Autonomous security gate and prediction-market/on-chain alpha engine on Base Mainnet with x402 USDC micropayments.",
+        "description_for_human": "Stealth web scraping and real-time Polymarket orderbook alpha with CanaryGuard prompt-injection firewall.",
+        "auth": {"type": "none"},
+        "api": {
+            "type": "openapi",
+            "url": f"{public_url}/openapi.json"
+        },
+        "logo_url": f"{public_url}/favicon.ico",
+        "contact_email": "ak10082247@gmail.com",
+        "legal_info_url": f"{public_url}/llms.txt"
+    }
+
 @app.get("/", include_in_schema=False)
 async def root():
     public_url = get_public_url()
@@ -219,6 +287,11 @@ async def root():
         "version": SERVICE_VERSION,
         "manifest": f"{public_url}/.well-known/x402.json",
         "agent_card": f"{public_url}/.well-known/agent-card.json",
+        "ai_plugin": f"{public_url}/.well-known/ai-plugin.json",
+        "llms_txt": f"{public_url}/llms.txt",
+        "llms_full_txt": f"{public_url}/llms-full.txt",
+        "robots_txt": f"{public_url}/robots.txt",
+        "sitemap_xml": f"{public_url}/sitemap.xml",
         "health": f"{public_url}/health",
         "stats": f"{public_url}/stats",
         "mcp": f"{public_url}/mcp",

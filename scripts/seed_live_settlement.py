@@ -218,31 +218,33 @@ def main():
     eth, usdc, usdc_units = check_onchain_balance(payer.address)
     print(f"On-Chain Balance: {usdc:.3f} USDC | {eth:.6f} ETH on Base Mainnet")
 
-    total_required = 20000 + 50000 + 30000
-    if usdc_units < total_required:
-        print(f"ERROR: Insufficient USDC balance. Requires {total_required} micro-units, found {usdc_units}.")
-        return 1
+    from src.config import TOOL_PRICING
 
     tools = [
         {
             "name": "stealth_scrape_and_sanitize",
             "path": "/v1/stealth_scrape_and_sanitize",
-            "amount": 20000,
+            "amount": int(TOOL_PRICING["stealth_scrape_and_sanitize"]["amount_microunits"]),
             "payload": {"url": "https://example.com", "render_js": False, "strict_mode": True},
         },
         {
             "name": "polymarket_alpha_divergence",
             "path": "/v1/polymarket_alpha_divergence",
-            "amount": 50000,
+            "amount": int(TOOL_PRICING["polymarket_alpha_divergence"]["amount_microunits"]),
             "payload": {"category": "crypto", "limit": 5, "strict_mode": True},
         },
         {
             "name": "pre_trade_agent_gate",
             "path": "/v1/pre_trade_agent_gate",
-            "amount": 30000,
+            "amount": int(TOOL_PRICING["pre_trade_agent_gate"]["amount_microunits"]),
             "payload": {"token_or_service_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "chain": "base"},
         },
     ]
+
+    total_required = sum(t["amount"] for t in tools)
+    if usdc_units < total_required:
+        print(f"ERROR: Insufficient USDC balance. Requires {total_required} micro-units, found {usdc_units}.")
+        return 1
 
     successes = 0
     for t in tools:

@@ -1,0 +1,137 @@
+# StealthGuard-402 Autonomous Agent Integration Manual (llms-full.txt)
+
+> **Network**: Base Mainnet (`eip155:8453`)
+> **Facilitator**: Coinbase CDP Facilitator (`https://api.cdp.coinbase.com/platform/v2/x402`)
+> **Settlement Asset**: USDC (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`)
+> **Payout Address**: `0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1`
+> **Base URL**: `https://stealthguard-402.onrender.com`
+
+---
+
+## 1. Overview for Autonomous Agents
+StealthGuard-402 is a machine-to-machine, pay-per-call intelligence and security gate designed for autonomous AI agents, algorithmic trading bots, and LLM pipelines operating on Base. Every call returns deterministic, injection-scrubbed data verified by the CanaryGuard firewall.
+
+---
+
+## 2. Complete Endpoints & Pricing Matrix
+All endpoints accept both `GET` (for zero-friction probing and pre-warmed queries) and `POST` (for structured custom queries).
+
+| Endpoint | Method | Price | Category | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `/v1/stealth_scrape_and_sanitize` | `GET`, `POST` | $0.005 USDC | Scraping | Bypasses Cloudflare Turnstile/anti-bot via Scrapling, extracts clean Markdown, runs CanaryGuard firewall. |
+| `/v1/polymarket_alpha_divergence` | `GET`, `POST` | $0.008 USDC | Alpha | Live CLOB orderbook anomalies, volume-to-liquidity spikes, and smart-money divergence. |
+| `/v1/pre_trade_agent_gate` | `GET`, `POST` | $0.005 USDC | Security | Pre-trade Base RPC liquidity check, honeypot simulation, and metadata sanitization. |
+| `/v1/alpha/polymarket-top-whales` | `GET`, `POST` | $0.003 USDC | Alpha | Top prediction market whale orderbook imbalances right now. |
+| `/v1/alpha/polymarket-crypto-odds` | `GET`, `POST` | $0.002 USDC | Alpha | Major crypto implied probability spreads (BTC, ETH, SOL) in basis points. |
+| `/v1/alpha/base-trending-tokens` | `GET`, `POST` | $0.003 USDC | Alpha | Trending Base DEX pairs screened for honeypots and malicious taxes. |
+| `/v1/alpha/defi-yield-radar` | `GET`, `POST` | $0.002 USDC | Alpha | Top real-time stablecoin and ETH APY yields on Base protocols. |
+| `/v1/alpha/hackernews-ai-digest` | `GET`, `POST` | $0.002 USDC | Alpha | Top HackerNews AI and autonomous agent stories converted to clean Markdown. |
+| `/v1/security/prompt-firewall` | `GET`, `POST` | $0.001 USDC | Security | Deterministic prompt-injection and wallet-drainer scrubber for agent context windows. |
+| `/v1/security/x402-endpoint-verifier` | `GET`, `POST` | $0.002 USDC | Security | Audits target x402 endpoints for authentic payTo wallet and challenge integrity. |
+
+---
+
+## 3. How Autonomous Agents Pay via x402 on Base
+When calling an unpaid endpoint, the server responds with `HTTP 402 Payment Required` and a `PAYMENT-REQUIRED` header containing the EIP-3009 parameters.
+
+### Python Code Example (EIP-3009 Signed Transfer)
+```python
+import time, secrets, base64, json, httpx
+from eth_account import Account
+from eth_account.messages import encode_typed_data
+
+payer = Account.from_key("0x<YOUR_PRIVATE_KEY>")
+amount_units = 5000  # $0.005 USDC
+now = int(time.time())
+nonce = "0x" + secrets.token_bytes(32).hex()
+
+types = {
+    "EIP712Domain": [
+        {"name": "name", "type": "string"},
+        {"name": "version", "type": "string"},
+        {"name": "chainId", "type": "uint256"},
+        {"name": "verifyingContract", "type": "address"},
+    ],
+    "TransferWithAuthorization": [
+        {"name": "from", "type": "address"},
+        {"name": "to", "type": "address"},
+        {"name": "value", "type": "uint256"},
+        {"name": "validAfter", "type": "uint256"},
+        {"name": "validBefore", "type": "uint256"},
+        {"name": "nonce", "type": "bytes32"},
+    ],
+}
+
+domain = {
+    "name": "USD Coin",
+    "version": "2",
+    "chainId": 8453,
+    "verifyingContract": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+}
+
+message = {
+    "from": payer.address,
+    "to": "0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1",
+    "value": amount_units,
+    "validAfter": 0,
+    "validBefore": now + 3600,
+    "nonce": bytes.fromhex(nonce[2:]),
+}
+
+signable = encode_typed_data(full_message={"types": types, "primaryType": "TransferWithAuthorization", "domain": domain, "message": message})
+signature = payer.sign_message(signable).signature.hex()
+
+v2_payload = {
+    "x402Version": 2,
+    "accepted": {
+        "scheme": "exact",
+        "network": "eip155:8453",
+        "amount": str(amount_units),
+        "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "payTo": "0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1",
+        "maxTimeoutSeconds": 300,
+        "extra": {"name": "USD Coin", "version": "2"}
+    },
+    "payload": {
+        "signature": "0x" + signature if not signature.startswith("0x") else signature,
+        "authorization": {
+            "from": payer.address,
+            "to": "0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1",
+            "value": str(amount_units),
+            "validAfter": "0",
+            "validBefore": str(now + 3600),
+            "nonce": nonce,
+        }
+    }
+}
+
+sig_header = base64.b64encode(json.dumps(v2_payload).encode()).decode()
+
+resp = httpx.post(
+    "https://stealthguard-402.onrender.com/v1/stealth_scrape_and_sanitize",
+    json={"url": "https://example.com"},
+    headers={"PAYMENT-SIGNATURE": sig_header}
+)
+print("Result:", resp.json())
+```
+
+---
+
+## 4. MCP Server (Cursor, Windsurf, Claude Desktop)
+Add to your `claude_desktop_config.json` or `mcpServers`:
+```json
+{
+  "mcpServers": {
+    "stealthguard": {
+      "command": "npx",
+      "args": ["-y", "stealthguard-mcp"]
+    }
+  }
+}
+```
+
+---
+
+## 5. Ecosystem Cross-Sell Matrix
+- **CanaryGuard-402**: `https://canaryguard-402.onrender.com/v1/sanitize` ($0.003 USDC)
+- **RugShield-402**: `https://rugshield-402.onrender.com/v1/scan` ($0.005 USDC)
