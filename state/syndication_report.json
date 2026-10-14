@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-14T21:24:45Z",
+  "timestamp": "2026-10-14T22:05:31Z",
   "service": "StealthGuard-402",
   "erc8004_agent_id": 124910,
   "manifest": "https://stealthguard-402.onrender.com/.well-known/x402.json",
@@ -10,91 +10,111 @@
       "tool": "stealth_scrape_and_sanitize",
       "url": "https://stealthguard-402.onrender.com/v1/stealth_scrape_and_sanitize",
       "price_usd": "0.005",
-      "status": "HTTP_405",
+      "status": "402_CHALLENGE_VERIFIED",
       "has_bazaar_extension": false,
-      "latency_ms": 431,
-      "status_code": 405
+      "latency_ms": 547,
+      "status_code": 402,
+      "payment_required_header": true,
+      "resource_url_verified": true
     },
     {
       "tool": "polymarket_alpha_divergence",
       "url": "https://stealthguard-402.onrender.com/v1/polymarket_alpha_divergence",
       "price_usd": "0.008",
-      "status": "HTTP_405",
+      "status": "402_CHALLENGE_VERIFIED",
       "has_bazaar_extension": false,
-      "latency_ms": 184,
-      "status_code": 405
+      "latency_ms": 669,
+      "status_code": 402,
+      "payment_required_header": true,
+      "resource_url_verified": true
     },
     {
       "tool": "pre_trade_agent_gate",
       "url": "https://stealthguard-402.onrender.com/v1/pre_trade_agent_gate",
       "price_usd": "0.005",
-      "status": "HTTP_405",
+      "status": "402_CHALLENGE_VERIFIED",
       "has_bazaar_extension": false,
-      "latency_ms": 238,
-      "status_code": 405
+      "latency_ms": 245,
+      "status_code": 402,
+      "payment_required_header": true,
+      "resource_url_verified": true
     },
     {
       "tool": "polymarket_top_whales",
       "url": "https://stealthguard-402.onrender.com/v1/alpha/polymarket-top-whales",
       "price_usd": "0.003",
-      "status": "HTTP_404",
+      "status": "402_CHALLENGE_VERIFIED",
       "has_bazaar_extension": false,
-      "latency_ms": 218,
-      "status_code": 404
+      "latency_ms": 307,
+      "status_code": 402,
+      "payment_required_header": true,
+      "resource_url_verified": true
     },
     {
       "tool": "polymarket_crypto_odds",
       "url": "https://stealthguard-402.onrender.com/v1/alpha/polymarket-crypto-odds",
       "price_usd": "0.002",
-      "status": "HTTP_404",
+      "status": "402_CHALLENGE_VERIFIED",
       "has_bazaar_extension": false,
-      "latency_ms": 182,
-      "status_code": 404
+      "latency_ms": 204,
+      "status_code": 402,
+      "payment_required_header": true,
+      "resource_url_verified": true
     },
     {
       "tool": "base_trending_tokens",
       "url": "https://stealthguard-402.onrender.com/v1/alpha/base-trending-tokens",
       "price_usd": "0.003",
-      "status": "HTTP_404",
+      "status": "402_CHALLENGE_VERIFIED",
       "has_bazaar_extension": false,
-      "latency_ms": 185,
-      "status_code": 404
+      "latency_ms": 206,
+      "status_code": 402,
+      "payment_required_header": true,
+      "resource_url_verified": true
     },
     {
       "tool": "defi_yield_radar",
       "url": "https://stealthguard-402.onrender.com/v1/alpha/defi-yield-radar",
       "price_usd": "0.002",
-      "status": "HTTP_404",
+      "status": "402_CHALLENGE_VERIFIED",
       "has_bazaar_extension": false,
-      "latency_ms": 548,
-      "status_code": 404
+      "latency_ms": 212,
+      "status_code": 402,
+      "payment_required_header": true,
+      "resource_url_verified": true
     },
     {
       "tool": "hackernews_ai_digest",
       "url": "https://stealthguard-402.onrender.com/v1/alpha/hackernews-ai-digest",
       "price_usd": "0.002",
-      "status": "HTTP_404",
+      "status": "402_CHALLENGE_VERIFIED",
       "has_bazaar_extension": false,
-      "latency_ms": 221,
-      "status_code": 404
+      "latency_ms": 190,
+      "status_code": 402,
+      "payment_required_header": true,
+      "resource_url_verified": true
     },
     {
       "tool": "security_prompt_firewall",
       "url": "https://stealthguard-402.onrender.com/v1/security/prompt-firewall",
       "price_usd": "0.001",
-      "status": "HTTP_404",
+      "status": "402_CHALLENGE_VERIFIED",
       "has_bazaar_extension": false,
-      "latency_ms": 191,
-      "status_code": 404
+      "latency_ms": 194,
+      "status_code": 402,
+      "payment_required_header": true,
+      "resource_url_verified": true
     },
     {
       "tool": "security_x402_endpoint_verifier",
       "url": "https://stealthguard-402.onrender.com/v1/security/x402-endpoint-verifier",
       "price_usd": "0.002",
-      "status": "HTTP_404",
+      "status": "402_CHALLENGE_VERIFIED",
       "has_bazaar_extension": false,
-      "latency_ms": 284,
-      "status_code": 404
+      "latency_ms": 202,
+      "status_code": 402,
+      "payment_required_header": true,
+      "resource_url_verified": true
     }
   ],
   "syndication_results": [
@@ -103,7 +123,7 @@
       "url": "https://www.x402scan.com/api/resources/submit",
       "status_code": 404,
       "response": "<!DOCTYPE html><!--HVyVQYwR43Uvu8sZ2q4jJ--><html lang=\"en\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><link rel=\"stylesheet\" href=\"/_next/static/",
-      "latency_ms": 341,
+      "latency_ms": 228,
       "delivered": true
     },
     {
@@ -111,7 +131,7 @@
       "url": "https://lumierepaycheck.org/api/probe",
       "status_code": 404,
       "response": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/probe</pre>\n</body>\n</html>\n",
-      "latency_ms": 389,
+      "latency_ms": 880,
       "delivered": true
     },
     {
@@ -119,7 +139,7 @@
       "url": "https://402radar.io/api/submit",
       "status_code": 404,
       "response": "<!DOCTYPE html><html lang=\"en\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><link rel=\"preload\" href=\"/_next/static/media/26d4368bf94c0ec4-s.p.woff",
-      "latency_ms": 279,
+      "latency_ms": 108,
       "delivered": true
     },
     {
@@ -127,7 +147,7 @@
       "url": "https://x402atlas.com/api/discovery",
       "status_code": 404,
       "response": "<!DOCTYPE html><!--RJfJzufrHuonMZcMep6Gb--><html><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/64c",
-      "latency_ms": 637,
+      "latency_ms": 636,
       "delivered": true
     },
     {
@@ -135,7 +155,7 @@
       "url": "https://roundhouseai.io/api/register",
       "status_code": 404,
       "response": "<!DOCTYPE html><html lang=\"en\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><link rel=\"preload\" href=\"/roundhouse/roundhouse-logo-dark.svg\" as=\"ima",
-      "latency_ms": 322,
+      "latency_ms": 142,
       "delivered": true
     },
     {
@@ -143,7 +163,7 @@
       "url": "https://x402-list.com/api/endpoints",
       "status_code": 404,
       "response": "<!DOCTYPE html><html lang=\"en\"> <head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>404 Not Found | x402 List</title><meta name=\"description\" content",
-      "latency_ms": 243,
+      "latency_ms": 217,
       "delivered": true
     }
   ]

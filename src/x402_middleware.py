@@ -231,6 +231,14 @@ def settle_via_cdp_facilitator(
                 res_data = {"error": resp.text}
 
             if resp.status_code == 200 and res_data.get("success"):
+                ext_resp = resp.headers.get("EXTENSION-RESPONSES")
+                if ext_resp:
+                    try:
+                        ext_json = json.loads(base64.b64decode(ext_resp).decode("utf-8"))
+                        logger.info(f"CDP Facilitator EXTENSION-RESPONSES: {ext_json}")
+                        res_data["extension_responses"] = ext_json
+                    except Exception as e:
+                        logger.debug(f"Failed decoding EXTENSION-RESPONSES: {e}")
                 logger.info(
                     f"CDP Facilitator settled successfully on-chain! "
                     f"tx={res_data.get('transaction')} payer={res_data.get('payer')} network={res_data.get('network')}"
@@ -664,6 +672,8 @@ def verify_x402_payment(
 
     v2_payment_payload = {
         "x402Version": 2,
+        "resource": resource_obj,
+        "extensions": discovery,
         "accepted": payment_requirements,
         "payload": {
             "signature": sig,
@@ -699,6 +709,9 @@ def verify_x402_payment(
         "network": settle_data.get("network") or NETWORK,
         "resource": res_url,
     }
+    if "extension_responses" in settle_data:
+        payment_info["extension_responses"] = settle_data["extension_responses"]
+
     return True, payment_info, None, 200
 
 def create_payment_response_header(payment_info: Dict[str, Any]) -> str:
