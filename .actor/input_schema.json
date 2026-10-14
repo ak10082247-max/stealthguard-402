@@ -33,7 +33,8 @@
       "title": "Render JavaScript",
       "type": "boolean",
       "description": "Activate Patchright/Playwright stealth browser rendering for Cloudflare Turnstile / SPAs",
-      "default": false
+      "default": false,
+      "editor": "checkbox"
     },
     "category": {
       "title": "Polymarket Category",
@@ -47,7 +48,8 @@
       "description": "Max markets to scan (1-50)",
       "default": 25,
       "minimum": 1,
-      "maximum": 50
+      "maximum": 50,
+      "editor": "number"
     },
     "token_or_service_address": {
       "title": "Token / Service Address",
@@ -72,7 +74,8 @@
       "title": "Strict Mode",
       "type": "boolean",
       "description": "CanaryGuard deterministic sanitization strictness",
-      "default": true
+      "default": true,
+      "editor": "checkbox"
     }
   },
   "required": ["tool"]

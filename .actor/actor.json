@@ -7,7 +7,8 @@
   "meta": {
     "templateId": "python-start"
   },
-  "dockerfile": "./Dockerfile",
+  "dockerfile": "../Dockerfile",
+  "readme": "../README.md",
   "payPerEvent": {
     "events": {
       "stealth_scrape_and_sanitize": {
@@ -27,5 +28,5 @@
       }
     }
   },
-  "input": "./.actor/input_schema.json"
+  "input": "./input_schema.json"
 }
