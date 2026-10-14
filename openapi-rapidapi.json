@@ -1,0 +1,177 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "StealthGuard-402 API",
+    "description": "High-margin stealth web extraction and prediction-market/on-chain alpha with CanaryGuard prompt-injection firewall. Monetized via Base USDC (x402) and Apify PPE.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "StealthGuard",
+      "url": "https://stealthguard-402.onrender.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://stealthguard-402.onrender.com",
+      "description": "Production Server"
+    }
+  ],
+  "paths": {
+    "/v1/health_and_sample": {
+      "get": {
+        "summary": "Health Check & Sample Discovery Payload",
+        "description": "Returns live service health, uptime score, and representative sample payloads for all tools without paywall.",
+        "responses": {
+          "200": {
+            "description": "Health status and samples",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/stealth_scrape_and_sanitize": {
+      "post": {
+        "summary": "Stealth Web Scrape & Prompt-Injection Sanitize",
+        "description": "Bypasses Cloudflare Turnstile/anti-bot protection via Scrapling, converts DOM to token-compressed LLM Markdown, and runs CanaryGuard deterministic firewall. Cost: $0.02 USDC on Base.",
+        "parameters": [
+          {
+            "name": "PAYMENT-SIGNATURE",
+            "in": "header",
+            "required": false,
+            "description": "x402 EIP-712 payment authorization signature settling 0.02 USDC on Base",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": { "type": "string", "format": "uri" },
+                  "extract_schema": { "type": "object" },
+                  "render_js": { "type": "boolean", "default": false },
+                  "strict_mode": { "type": "boolean", "default": true }
+                },
+                "required": ["url"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sanitized content and CanaryGuard safety receipt",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required: 0.02 USDC on Base mainnet"
+          }
+        }
+      }
+    },
+    "/v1/polymarket_alpha_divergence": {
+      "post": {
+        "summary": "Polymarket Spread & Whale Volume Divergence Scan",
+        "description": "Scans Polymarket Gamma + CLOB orderbooks for volume spikes and smart-money spread divergence, scrapes resolution sources, and audits resolution rules via CanaryGuard. Cost: $0.05 USDC on Base.",
+        "parameters": [
+          {
+            "name": "PAYMENT-SIGNATURE",
+            "in": "header",
+            "required": false,
+            "description": "x402 EIP-712 payment authorization signature settling 0.05 USDC on Base",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "category": { "type": "string" },
+                  "limit": { "type": "integer", "default": 25 },
+                  "strict_mode": { "type": "boolean", "default": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Alpha opportunities and CanaryGuard receipt",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required: 0.05 USDC on Base mainnet"
+          }
+        }
+      }
+    },
+    "/v1/pre_trade_agent_gate": {
+      "post": {
+        "summary": "Pre-Trade Agent Honeypot & Injection Gate",
+        "description": "Combines DexScreener liquidity analysis & Base/Solana RPC honeypot checks with CanaryGuard metadata injection scrubbing. Returns TRUST or BLOCK verdict. Cost: $0.03 USDC on Base.",
+        "parameters": [
+          {
+            "name": "PAYMENT-SIGNATURE",
+            "in": "header",
+            "required": false,
+            "description": "x402 EIP-712 payment authorization signature settling 0.03 USDC on Base",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token_or_service_address": { "type": "string" },
+                  "chain": { "type": "string", "enum": ["base", "solana"], "default": "base" },
+                  "target_url": { "type": "string" },
+                  "strict_mode": { "type": "boolean", "default": true }
+                },
+                "required": ["token_or_service_address"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deterministic TRUST / BLOCK verdict and safety metrics",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required: 0.03 USDC on Base mainnet"
+          }
+        }
+      }
+    }
+  }
+}
