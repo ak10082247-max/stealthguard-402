@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-14T19:55:57Z",
+  "timestamp": "2026-10-14T21:24:45Z",
   "service": "StealthGuard-402",
   "erc8004_agent_id": 124910,
   "manifest": "https://stealthguard-402.onrender.com/.well-known/x402.json",
   "agent_card": "https://stealthguard-402.onrender.com/.well-known/agent-card.json",
-  "verified_endpoints_count": 18,
+  "verified_endpoints_count": 10,
   "endpoints": [
     {
       "tool": "stealth_scrape_and_sanitize",
@@ -12,7 +12,7 @@
       "price_usd": "0.005",
       "status": "HTTP_405",
       "has_bazaar_extension": false,
-      "latency_ms": 677,
+      "latency_ms": 431,
       "status_code": 405
     },
     {
@@ -21,7 +21,7 @@
       "price_usd": "0.008",
       "status": "HTTP_405",
       "has_bazaar_extension": false,
-      "latency_ms": 613,
+      "latency_ms": 184,
       "status_code": 405
     },
     {
@@ -30,7 +30,7 @@
       "price_usd": "0.005",
       "status": "HTTP_405",
       "has_bazaar_extension": false,
-      "latency_ms": 620,
+      "latency_ms": 238,
       "status_code": 405
     },
     {
@@ -39,7 +39,7 @@
       "price_usd": "0.003",
       "status": "HTTP_404",
       "has_bazaar_extension": false,
-      "latency_ms": 346,
+      "latency_ms": 218,
       "status_code": 404
     },
     {
@@ -48,16 +48,7 @@
       "price_usd": "0.002",
       "status": "HTTP_404",
       "has_bazaar_extension": false,
-      "latency_ms": 1441,
-      "status_code": 404
-    },
-    {
-      "tool": "polymarket_macro_fed",
-      "url": "https://stealthguard-402.onrender.com/v1/alpha/polymarket-macro-fed",
-      "price_usd": "0.002",
-      "status": "HTTP_404",
-      "has_bazaar_extension": false,
-      "latency_ms": 507,
+      "latency_ms": 182,
       "status_code": 404
     },
     {
@@ -66,25 +57,7 @@
       "price_usd": "0.003",
       "status": "HTTP_404",
       "has_bazaar_extension": false,
-      "latency_ms": 701,
-      "status_code": 404
-    },
-    {
-      "tool": "base_new_pools",
-      "url": "https://stealthguard-402.onrender.com/v1/alpha/base-new-pools",
-      "price_usd": "0.003",
-      "status": "HTTP_404",
-      "has_bazaar_extension": false,
-      "latency_ms": 493,
-      "status_code": 404
-    },
-    {
-      "tool": "solana_trending_safe",
-      "url": "https://stealthguard-402.onrender.com/v1/alpha/solana-trending-safe",
-      "price_usd": "0.003",
-      "status": "HTTP_404",
-      "has_bazaar_extension": false,
-      "latency_ms": 206,
+      "latency_ms": 185,
       "status_code": 404
     },
     {
@@ -93,16 +66,7 @@
       "price_usd": "0.002",
       "status": "HTTP_404",
       "has_bazaar_extension": false,
-      "latency_ms": 939,
-      "status_code": 404
-    },
-    {
-      "tool": "crypto_sentiment_pulse",
-      "url": "https://stealthguard-402.onrender.com/v1/alpha/crypto-sentiment-pulse",
-      "price_usd": "0.002",
-      "status": "HTTP_404",
-      "has_bazaar_extension": false,
-      "latency_ms": 587,
+      "latency_ms": 548,
       "status_code": 404
     },
     {
@@ -111,25 +75,7 @@
       "price_usd": "0.002",
       "status": "HTTP_404",
       "has_bazaar_extension": false,
-      "latency_ms": 226,
-      "status_code": 404
-    },
-    {
-      "tool": "github_trending_agents",
-      "url": "https://stealthguard-402.onrender.com/v1/alpha/github-trending-agents",
-      "price_usd": "0.002",
-      "status": "HTTP_404",
-      "has_bazaar_extension": false,
-      "latency_ms": 269,
-      "status_code": 404
-    },
-    {
-      "tool": "arxiv_agent_papers",
-      "url": "https://stealthguard-402.onrender.com/v1/alpha/arxiv-agent-papers",
-      "price_usd": "0.002",
-      "status": "HTTP_404",
-      "has_bazaar_extension": false,
-      "latency_ms": 266,
+      "latency_ms": 221,
       "status_code": 404
     },
     {
@@ -138,16 +84,7 @@
       "price_usd": "0.001",
       "status": "HTTP_404",
       "has_bazaar_extension": false,
-      "latency_ms": 264,
-      "status_code": 404
-    },
-    {
-      "tool": "security_url_threat_check",
-      "url": "https://stealthguard-402.onrender.com/v1/security/url-threat-check",
-      "price_usd": "0.002",
-      "status": "HTTP_404",
-      "has_bazaar_extension": false,
-      "latency_ms": 637,
+      "latency_ms": 191,
       "status_code": 404
     },
     {
@@ -156,16 +93,7 @@
       "price_usd": "0.002",
       "status": "HTTP_404",
       "has_bazaar_extension": false,
-      "latency_ms": 630,
-      "status_code": 404
-    },
-    {
-      "tool": "security_evm_calldata_firewall",
-      "url": "https://stealthguard-402.onrender.com/v1/security/evm-calldata-firewall",
-      "price_usd": "0.002",
-      "status": "HTTP_404",
-      "has_bazaar_extension": false,
-      "latency_ms": 518,
+      "latency_ms": 284,
       "status_code": 404
     }
   ],
@@ -175,7 +103,7 @@
       "url": "https://www.x402scan.com/api/resources/submit",
       "status_code": 404,
       "response": "<!DOCTYPE html><!--HVyVQYwR43Uvu8sZ2q4jJ--><html lang=\"en\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><link rel=\"stylesheet\" href=\"/_next/static/",
-      "latency_ms": 287,
+      "latency_ms": 341,
       "delivered": true
     },
     {
@@ -183,7 +111,7 @@
       "url": "https://lumierepaycheck.org/api/probe",
       "status_code": 404,
       "response": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/probe</pre>\n</body>\n</html>\n",
-      "latency_ms": 685,
+      "latency_ms": 389,
       "delivered": true
     },
     {
@@ -191,7 +119,7 @@
       "url": "https://402radar.io/api/submit",
       "status_code": 404,
       "response": "<!DOCTYPE html><html lang=\"en\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><link rel=\"preload\" href=\"/_next/static/media/26d4368bf94c0ec4-s.p.woff",
-      "latency_ms": 3617,
+      "latency_ms": 279,
       "delivered": true
     },
     {
@@ -199,7 +127,7 @@
       "url": "https://x402atlas.com/api/discovery",
       "status_code": 404,
       "response": "<!DOCTYPE html><!--RJfJzufrHuonMZcMep6Gb--><html><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/64c",
-      "latency_ms": 615,
+      "latency_ms": 637,
       "delivered": true
     },
     {
@@ -207,7 +135,7 @@
       "url": "https://roundhouseai.io/api/register",
       "status_code": 404,
       "response": "<!DOCTYPE html><html lang=\"en\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><link rel=\"preload\" href=\"/roundhouse/roundhouse-logo-dark.svg\" as=\"ima",
-      "latency_ms": 350,
+      "latency_ms": 322,
       "delivered": true
     },
     {
@@ -215,7 +143,7 @@
       "url": "https://x402-list.com/api/endpoints",
       "status_code": 404,
       "response": "<!DOCTYPE html><html lang=\"en\"> <head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>404 Not Found | x402 List</title><meta name=\"description\" content",
-      "latency_ms": 169,
+      "latency_ms": 243,
       "delivered": true
     }
   ]

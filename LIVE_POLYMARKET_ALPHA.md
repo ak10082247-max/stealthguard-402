@@ -1,6 +1,6 @@
 # ⚡ Live Polymarket Alpha & Whale Divergence Feed
 
-> **Last Automated Scan**: `2026-10-14 19:18:58 UTC`  
+> **Last Automated Scan**: `2026-10-14 21:23:51 UTC`  
 > **Source Engine**: Polymarket Gamma API + Live CLOB Orderbook Divergence + CanaryGuard Firewall  
 > **Update Cadence**: Refreshed automatically every 2 hours via GitHub Actions  
 > **Uptime & Pay-to-Call**: [`https://stealthguard-402.onrender.com`](https://stealthguard-402.onrender.com) | Wallet: `0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1`
@@ -13,10 +13,10 @@ Every 2 hours, StealthGuard identifies the prediction market experiencing the mo
 
 | Metric | Scanned Live Reading |
 | :--- | :--- |
-| **Market / Question** | **`[REDACTED: Top Whale-Accumulated Market - 67.4x Volume/Liquidity Ratio]`** |
-| **24-Hour Trading Volume** | **$456,827 USD** |
-| **Book Liquidity Depth** | **$6,774 USD** |
-| **Volume-to-Liquidity Ratio** | **67.44x Surge** |
+| **Market / Question** | **`[REDACTED: Top Whale-Accumulated Market - 11.5x Volume/Liquidity Ratio]`** |
+| **24-Hour Trading Volume** | **$2,842,771 USD** |
+| **Book Liquidity Depth** | **$247,058 USD** |
+| **Volume-to-Liquidity Ratio** | **11.51x Surge** |
 | **CLOB Spread Bps** | `[LOCKED: Requires $0.05 USDC micropayment]` |
 | **Whale Bid/Ask Imbalance** | `[LOCKED: Requires $0.05 USDC micropayment]` |
 | **CanaryGuard Safety Receipt** | **`PASSED (Risk Score: 0.00 / Clean Resolution Criteria)`** |
@@ -44,8 +44,8 @@ Here are two unredacted live markets scanned in this latest batch with their cal
 
 | Market Question | Volume (24h) | Liquidity | Vol/Liq Ratio | Spread | Alpha Rating | CanaryGuard |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Manchester City FC vs. Paris Saint-Germain FC: O/U 3.5 | $517,733 | $13,638 | **37.96x** | 200.0 bps | `HIGH_WHALE_DIVERGENCE` | `PASSED (0.00)` |
-| Will Real Madrid CF win on 2026-10-14? | $4,995,960 | $143,911 | **34.72x** | 100.0 bps | `HIGH_WHALE_DIVERGENCE` | `PASSED (0.00)` |
+| Will there be no change in Fed interest rates after the October 2026 meeting? | $2,341,719 | $229,309 | **10.21x** | 100.0 bps | `HIGH_WHALE_DIVERGENCE` | `PASSED (0.00)` |
+| US x Iran ceasefire continues through October 15? | $284,108 | $28,836 | **9.85x** | 10.0 bps | `VOLUME_ACCUMULATION` | `PASSED (0.00)` |
 
 ---
 

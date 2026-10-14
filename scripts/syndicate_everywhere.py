@@ -65,8 +65,9 @@ async def verify_local_or_live_endpoint(client: httpx.AsyncClient, tool_name: st
                 res["payment_required_header"] = True
             try:
                 body = resp.json()
-                res["has_bazaar_extension"] = "extensions" in body and "bazaar" in body.get("extensions", {})
-                res["resource_url_verified"] = body.get("resource") == url
+                res_field = body.get("resource")
+                res_url = res_field.get("url") if isinstance(res_field, dict) else res_field
+                res["resource_url_verified"] = res_url == url
             except Exception:
                 pass
         else:
