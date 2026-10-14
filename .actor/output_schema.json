@@ -8,7 +8,7 @@
       "type": "string",
       "title": "Results Dataset",
       "description": "Default dataset containing sanitized web extractions, Polymarket alpha divergence signals, and on-chain pre-trade security receipts",
-      "resourceType": "dataset"
+      "template": "{{links.apiDefaultDatasetUrl}}/items?format=json"
     }
   }
 }

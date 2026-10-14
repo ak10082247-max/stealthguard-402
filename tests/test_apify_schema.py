@@ -76,6 +76,9 @@ def test_apify_output_schema_compliance():
     assert "title" in output_schema
     assert output_schema.get("type") == "object"
     assert "properties" in output_schema
+    for prop_name, prop in output_schema["properties"].items():
+        assert "template" in prop, f"Property '{prop_name}' missing required 'template'"
+        assert isinstance(prop["template"], str) and len(prop["template"]) > 0
 
 def test_apify_dataset_schema_compliance():
     dataset_path = Path(__file__).parent.parent / ".actor" / "dataset_schema.json"
