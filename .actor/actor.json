@@ -3,10 +3,7 @@
   "name": "stealthguard-402",
   "title": "StealthGuard-402: Stealth Web Extraction, Prediction Alpha & Security Firewall",
   "description": "Fuses stealth web scraping (Scrapling), Polymarket spread & whale divergence alpha, and on-chain pre-trade gating with CanaryGuard deterministic prompt-injection firewall. Monetized via Base x402 and Apify PPE.",
-  "version": "1.0.0",
-  "meta": {
-    "templateId": "python-start"
-  },
+  "version": "1.0",
   "dockerfile": "../Dockerfile",
   "readme": "../README.md",
   "payPerEvent": {
