@@ -60,5 +60,32 @@ def test_apify_actor_json_compliance():
     assert actor.get("name") == "stealthguard-402"
     assert actor.get("version") == "1.0"
     assert actor.get("input") == "./input_schema.json"
+    assert actor.get("output") == "./output_schema.json"
+    assert actor.get("storages", {}).get("dataset") == "./dataset_schema.json"
     assert actor.get("dockerfile") == "../Dockerfile"
     assert "meta" not in actor, "Non-standard 'meta' key should not be present in actor.json"
+
+def test_apify_output_schema_compliance():
+    output_path = Path(__file__).parent.parent / ".actor" / "output_schema.json"
+    assert output_path.exists(), f"output_schema.json not found at {output_path}"
+
+    with open(output_path, "r", encoding="utf-8") as f:
+        output_schema = json.load(f)
+
+    assert output_schema.get("actorOutputSchemaVersion") == 1
+    assert "title" in output_schema
+    assert output_schema.get("type") == "object"
+    assert "properties" in output_schema
+
+def test_apify_dataset_schema_compliance():
+    dataset_path = Path(__file__).parent.parent / ".actor" / "dataset_schema.json"
+    assert dataset_path.exists(), f"dataset_schema.json not found at {dataset_path}"
+
+    with open(dataset_path, "r", encoding="utf-8") as f:
+        dataset_schema = json.load(f)
+
+    assert dataset_schema.get("actorSpecification") == 1
+    assert "fields" in dataset_schema
+    assert "views" in dataset_schema
+    assert "overview" in dataset_schema["views"]
+

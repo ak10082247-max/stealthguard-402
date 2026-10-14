@@ -1,0 +1,14 @@
+{
+  "actorOutputSchemaVersion": 1,
+  "title": "StealthGuard-402 Output",
+  "description": "Output schema for StealthGuard-402 results dataset and security audit receipts",
+  "type": "object",
+  "properties": {
+    "resultsDatasetUrl": {
+      "type": "string",
+      "title": "Results Dataset",
+      "description": "Default dataset containing sanitized web extractions, Polymarket alpha divergence signals, and on-chain pre-trade security receipts",
+      "resourceType": "dataset"
+    }
+  }
+}

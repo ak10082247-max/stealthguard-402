@@ -1,0 +1,79 @@
+{
+  "actorSpecification": 1,
+  "fields": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "verdict": {
+        "type": "string",
+        "title": "Security Verdict",
+        "description": "Deterministic safety verdict: TRUST or BLOCK",
+        "example": "TRUST"
+      },
+      "url": {
+        "type": "string",
+        "title": "Target URL",
+        "description": "Scraped website or audited contract/resource address",
+        "example": "https://example.com"
+      },
+      "markdown": {
+        "type": "string",
+        "title": "Sanitized LLM Markdown",
+        "description": "Clean, token-compressed LLM-safe markdown content stripped of prompt injections and active scripts"
+      },
+      "extracted_data": {
+        "type": "object",
+        "title": "Structured Extraction",
+        "description": "Extracted structured JSON matching requested schema"
+      },
+      "alpha_signals": {
+        "type": "array",
+        "title": "Polymarket Alpha Signals",
+        "description": "Prediction market volume divergence & smart money spread signals"
+      },
+      "security_checks": {
+        "type": "object",
+        "title": "On-Chain Security Checks",
+        "description": "On-chain honeypot, liquidity, and bytecode analysis"
+      },
+      "canaryguard_receipt": {
+        "type": "object",
+        "title": "CanaryGuard Receipt",
+        "description": "Deterministic security receipt (risk score, threats, safe_to_persist)"
+      }
+    },
+    "additionalProperties": true
+  },
+  "views": {
+    "overview": {
+      "title": "Overview",
+      "description": "Clean overview of security verdicts, receipts, and sanitized outputs",
+      "transformation": {
+        "fields": [
+          "verdict",
+          "url",
+          "canaryguard_receipt",
+          "markdown"
+        ]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "verdict": {
+            "label": "Verdict"
+          },
+          "url": {
+            "label": "Target URL",
+            "format": "link"
+          },
+          "canaryguard_receipt": {
+            "label": "Security Receipt"
+          },
+          "markdown": {
+            "label": "Sanitized Content"
+          }
+        }
+      }
+    }
+  }
+}
