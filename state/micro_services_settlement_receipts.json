@@ -1,0 +1,67 @@
+{
+  "buyer_hot_wallet": "0x6b5f275F028A214fb2e6d21061db791E3b07BEeD",
+  "payout_recipient": "0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1",
+  "network": "eip155:8453",
+  "settlements": [
+    {
+      "service": "polymarket_top_whales",
+      "resource": "https://stealthguard-402.onrender.com/v1/alpha/polymarket-top-whales",
+      "amount_usdc": "0.003",
+      "amount_units": 3000,
+      "status": "SUCCESS",
+      "transaction_hash": "0x3940af23d4c4f7739e0f21d710370a72c32fde4059d02d3c4db7e97176b8f4ba",
+      "basescan_url": "https://basescan.org/tx/0x3940af23d4c4f7739e0f21d710370a72c32fde4059d02d3c4db7e97176b8f4ba",
+      "settled_at": "2026-10-14T20:00:53Z"
+    },
+    {
+      "service": "polymarket_crypto_odds",
+      "resource": "https://stealthguard-402.onrender.com/v1/alpha/polymarket-crypto-odds",
+      "amount_usdc": "0.002",
+      "amount_units": 2000,
+      "status": "SUCCESS",
+      "transaction_hash": "0x126df50ddf66370ae6a19ac52560b520bebd20ada104b57e7ee9c2ae5495665c",
+      "basescan_url": "https://basescan.org/tx/0x126df50ddf66370ae6a19ac52560b520bebd20ada104b57e7ee9c2ae5495665c",
+      "settled_at": "2026-10-14T20:00:56Z"
+    },
+    {
+      "service": "base_trending_tokens",
+      "resource": "https://stealthguard-402.onrender.com/v1/alpha/base-trending-tokens",
+      "amount_usdc": "0.003",
+      "amount_units": 3000,
+      "status": "SUCCESS",
+      "transaction_hash": "0x8479834ec4e75394ed38ade4bf0084737f7b427c73cee99891fcd860778ef591",
+      "basescan_url": "https://basescan.org/tx/0x8479834ec4e75394ed38ade4bf0084737f7b427c73cee99891fcd860778ef591",
+      "settled_at": "2026-10-14T20:00:59Z"
+    },
+    {
+      "service": "security_prompt_firewall",
+      "resource": "https://stealthguard-402.onrender.com/v1/security/prompt-firewall",
+      "amount_usdc": "0.001",
+      "amount_units": 1000,
+      "status": "SUCCESS",
+      "transaction_hash": "0x14ec4f450230c295b2c59267686ec04d6e106feb32fdbd85748685108cde038e",
+      "basescan_url": "https://basescan.org/tx/0x14ec4f450230c295b2c59267686ec04d6e106feb32fdbd85748685108cde038e",
+      "settled_at": "2026-10-14T20:01:02Z"
+    },
+    {
+      "service": "rugshield_honeypot_scan",
+      "resource": "https://rugshield-402.onrender.com/v1/scan",
+      "amount_usdc": "0.005",
+      "amount_units": 5000,
+      "status": "SUCCESS",
+      "transaction_hash": "0xb47b3de0f91d11525ed52dff2a67f23271eff82a054fa68fb3bef34eb3b011c0",
+      "basescan_url": "https://basescan.org/tx/0xb47b3de0f91d11525ed52dff2a67f23271eff82a054fa68fb3bef34eb3b011c0",
+      "settled_at": "2026-10-14T20:01:05Z"
+    },
+    {
+      "service": "canaryguard_sanitization",
+      "resource": "https://canaryguard-402.onrender.com/v1/sanitize",
+      "amount_usdc": "0.003",
+      "amount_units": 3000,
+      "status": "SUCCESS",
+      "transaction_hash": "0x9377357c8fc53f7ac9f438be5b0c65c3d62432a0151a7545f8a8bb654bebf3c1",
+      "basescan_url": "https://basescan.org/tx/0x9377357c8fc53f7ac9f438be5b0c65c3d62432a0151a7545f8a8bb654bebf3c1",
+      "settled_at": "2026-10-14T20:01:09Z"
+    }
+  ]
+}
