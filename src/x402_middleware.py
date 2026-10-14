@@ -66,6 +66,23 @@ def clean_replay_cache():
     for k in expired:
         del REPLAY_CACHE[k]
 
+def clean_pem_private_key(raw_key: str) -> str:
+    """Robustly cleans and normalizes a PEM private key from environment variables or files."""
+    if not raw_key:
+        return ""
+    k = raw_key.strip().strip('"').strip("'")
+    k = k.replace("\\r\\n", "\n").replace("\\n", "\n").replace("\r", "")
+    
+    match = re.search(r"-----BEGIN (?:EC )?PRIVATE KEY-----\s*(.*?)\s*-----END (?:EC )?PRIVATE KEY-----", k, re.DOTALL)
+    if match:
+        body = "".join(match.group(1).split())
+        lines = [body[i:i+64] for i in range(0, len(body), 64)]
+        return "-----BEGIN EC PRIVATE KEY-----\n" + "\n".join(lines) + "\n-----END EC PRIVATE KEY-----\n"
+    
+    if not k.endswith("\n"):
+        k += "\n"
+    return k
+
 def load_cdp_credentials() -> Tuple[Optional[str], Optional[str]]:
     """
     Loads CDP API credentials from environment or known credential files.
@@ -76,7 +93,7 @@ def load_cdp_credentials() -> Tuple[Optional[str], Optional[str]]:
     
     if key_id and key_secret:
         clean_id = key_id.strip().strip('"').strip("'")
-        clean_secret = key_secret.strip().strip('"').strip("'").replace("\\n", "\n")
+        clean_secret = clean_pem_private_key(key_secret)
         return clean_id, clean_secret
 
     candidate_files = [
@@ -130,7 +147,7 @@ def generate_cdp_jwt(key_id: str, private_key: str, method: str, host: str, path
         "kid": key_id,
         "nonce": secrets.token_hex(16),
     }
-    clean_key = private_key.replace("\\n", "\n")
+    clean_key = clean_pem_private_key(private_key)
     return jwt.encode(payload, clean_key, algorithm="ES256", headers=headers)
 
 def verify_via_cdp_facilitator(
