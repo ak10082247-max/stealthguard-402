@@ -14,4 +14,5 @@ ENV PORT=10000
 
 EXPOSE 10000
 
-CMD ["sh", "-c", "uvicorn src.api:app --host 0.0.0.0 --port ${PORT:-10000}"]
+CMD ["sh", "-c", "if [ \"$APIFY_IS_AT_HOME\" = \"1\" ] || [ -n \"$APIFY_ACT_ID\" ]; then python apify_main.py; else uvicorn src.api:app --host 0.0.0.0 --port ${PORT:-10000}; fi"]
+
