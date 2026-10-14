@@ -288,11 +288,22 @@ def build_bazaar_extension(
             "info": {
                 "input": {
                     "type": "http",
+                    "method": "POST",
                     "bodyType": "json",
                     "body": example_input or {},
                     "category": category,
                     "price": price_formatted,
-                }
+                },
+                "output": {
+                    "example": {
+                        "status": "success",
+                        "service": SERVICE_NAME,
+                        "tool": tool_name,
+                        "category": category,
+                        "verified_by": "CanaryGuard",
+                        "risk_score": 0.0,
+                    }
+                },
             },
             "schema": {
                 "$schema": "https://json-schema.org/draft/2020-12/schema",
