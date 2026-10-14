@@ -9,6 +9,20 @@
     "url": "https://github.com/ak10082247-max/stealthguard-402",
     "source": "github"
   },
+  "packages": [
+    {
+      "registry": "npm",
+      "package": "stealthguard-mcp",
+      "command": "npx",
+      "args": ["-y", "stealthguard-mcp"]
+    },
+    {
+      "registry": "pypi",
+      "package": "stealthguard-mcp",
+      "command": "uvx",
+      "args": ["stealthguard-mcp"]
+    }
+  ],
   "remotes": [
     {
       "type": "streamable-http",

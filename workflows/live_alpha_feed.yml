@@ -1,0 +1,50 @@
+name: Live Alpha Feed & Proof-of-Quality Dispatch
+
+on:
+  schedule:
+    # Run every 2 hours
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-feed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Generate Public Alpha Teaser & Run Broadcasts
+        env:
+          PUBLIC_URL: https://stealthguard-402.onrender.com
+          WALLET_ADDRESS: 0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python scripts/generate_public_alpha_teaser.py
+
+      - name: Commit and Push Updated Alpha Feed
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add LIVE_POLYMARKET_ALPHA.md feed/latest_alpha.json
+          if git diff --staged --quiet; then
+            echo "No alpha changes detected in this cycle."
+          else
+            git commit -m "chore(feed): refresh live polymarket alpha teaser [skip ci]"
+            git push origin main
+          fi

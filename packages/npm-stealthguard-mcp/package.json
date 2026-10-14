@@ -1,0 +1,29 @@
+{
+  "name": "stealthguard-mcp",
+  "version": "1.0.0",
+  "description": "Zero-config stdio MCP client proxy for StealthGuard-402: Stealth Web Scraping, Polymarket Alpha, and On-Chain Pre-Trade Token Gating",
+  "type": "module",
+  "main": "bin/index.js",
+  "bin": {
+    "stealthguard-mcp": "./bin/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "stealthguard",
+    "canaryguard",
+    "x402",
+    "polymarket",
+    "scrapling",
+    "base"
+  ],
+  "author": "Kurox <ak10082247-max>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ak10082247-max/stealthguard-402.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

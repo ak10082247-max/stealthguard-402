@@ -3,9 +3,18 @@ build:
   dockerfile: Dockerfile
   dockerBuildPath: .
 startCommand:
-  type: http
+  type: stdio
+  command: npx
+  args:
+    - -y
+    - stealthguard-mcp
   configSchema:
     type: object
-    properties: {}
+    properties:
+      STEALTHGUARD_URL:
+        type: string
+        description: Custom StealthGuard HTTP MCP endpoint URL (defaults to live production service)
+        default: https://stealthguard-402.onrender.com/mcp
     additionalProperties: false
-  exampleConfig: {}
+  exampleConfig:
+    STEALTHGUARD_URL: https://stealthguard-402.onrender.com/mcp

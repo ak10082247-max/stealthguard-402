@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stealthguard-mcp"
+version = "1.0.0"
+description = "Zero-config stdio MCP client proxy for StealthGuard-402 (Stealth Web Scraping, Polymarket Alpha, and Pre-Trade Token Gating)"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Kurox", email = "kurox@users.noreply.github.com" }
+]
+keywords = [
+    "mcp",
+    "model-context-protocol",
+    "stealthguard",
+    "canaryguard",
+    "x402",
+    "polymarket",
+    "scrapling"
+]
+dependencies = []
+
+[project.scripts]
+stealthguard-mcp = "stealthguard_mcp.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/ak10082247-max/stealthguard-402"
+Repository = "https://github.com/ak10082247-max/stealthguard-402.git"

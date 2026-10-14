@@ -1,0 +1,74 @@
+{
+  "service": "StealthGuard-402",
+  "feed": "polymarket_alpha_teaser",
+  "update_frequency": "Every 2 Hours (Automated GitHub Action)",
+  "generated_at_utc": "2026-10-14 16:02:56",
+  "total_markets_scanned": 25,
+  "top_whale_leader": {
+    "market_id_preview": "5504998...",
+    "question": "[REDACTED: Top Whale-Accumulated Market - 13.3x Volume/Liquidity Ratio]",
+    "volume_24hr_usd": 497923.523596,
+    "liquidity_usd": 37370.8006,
+    "volume_to_liquidity_ratio": 13.324,
+    "spread_bps": "[LOCKED: Requires $0.05 USDC micropayment]",
+    "orderbook_imbalance": "[LOCKED: Requires $0.05 USDC micropayment]",
+    "alpha_rating": "HIGH_WHALE_DIVERGENCE",
+    "canaryguard_receipt": {
+      "threat_level": "LOW",
+      "risk_score": 0.0,
+      "safe_to_persist": true,
+      "audit_verdict": "CANARYGUARD_VERIFIED (Clean Resolution Text)"
+    }
+  },
+  "verified_samples": [
+    {
+      "question": "Will there be no change in Fed interest rates after the October 2026 meeting?",
+      "slug": "will-there-be-no-change-in-fed-interest-rates-after-the-october-2026-meeting-20260617190324031",
+      "volume_24hr_usd": 2117020.692397001,
+      "liquidity_usd": 203947.1818,
+      "volume_to_liquidity_ratio": 10.38,
+      "spread_bps": 100.0,
+      "orderbook_imbalance": -0.0111,
+      "alpha_rating": "HIGH_WHALE_DIVERGENCE",
+      "resolution_source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "canaryguard_receipt": {
+        "threat_level": "LOW",
+        "risk_score": 0.0,
+        "safe_to_persist": true
+      }
+    },
+    {
+      "question": "Will the Fed increase interest rates by 25 bps after the October 2026 meeting?",
+      "slug": "will-the-fed-increase-interest-rates-by-25-bps-after-the-october-2026-meeting-20260617190324032",
+      "volume_24hr_usd": 1213105.8797299995,
+      "liquidity_usd": 148302.9794,
+      "volume_to_liquidity_ratio": 8.18,
+      "spread_bps": 100.0,
+      "orderbook_imbalance": -0.0613,
+      "alpha_rating": "HIGH_WHALE_DIVERGENCE",
+      "resolution_source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "canaryguard_receipt": {
+        "threat_level": "LOW",
+        "risk_score": 0.0,
+        "safe_to_persist": true
+      }
+    }
+  ],
+  "unlock_endpoints": {
+    "http_direct_x402": {
+      "method": "POST",
+      "url": "https://stealthguard-402.onrender.com/v1/polymarket_alpha_divergence",
+      "price": "0.05 USDC on Base (eip155:8453)",
+      "recipient_wallet": "0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1"
+    },
+    "apify_store": {
+      "actor": "stealthguard-402",
+      "url": "https://apify.com/kuroxreal/stealthguard-402",
+      "pricing": "2 PPE events ($0.05)"
+    },
+    "stdio_mcp": {
+      "command": "npx -y stealthguard-mcp",
+      "tool": "polymarket_alpha_divergence"
+    }
+  }
+}

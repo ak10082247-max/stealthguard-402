@@ -135,16 +135,54 @@ tests/test_x402_challenge.py::test_valid_eip712_payment_verification_and_replay_
 
 ---
 
+## ⚡ Zero-Config Stdio Client Packages (Cursor / Claude / Windsurf)
+
+Most AI developer tools and desktop agent environments connect to MCP servers via `stdio`. StealthGuard provides zero-config proxy wrappers for Node and Python that automatically route stdio calls to the live production server:
+
+### Option A: Node / NPX
+```bash
+npx -y stealthguard-mcp
+```
+
+**Claude Desktop Configuration (`claude_desktop_config.json`):**
+```json
+{
+  "mcpServers": {
+    "stealthguard": {
+      "command": "npx",
+      "args": ["-y", "stealthguard-mcp"]
+    }
+  }
+}
+```
+
+### Option B: Python / UVX
+```bash
+uvx stealthguard-mcp
+```
+or via pip:
+```bash
+pip install stealthguard-mcp
+```
+
+---
+
+## 📊 Live Polymarket Alpha & Proof-of-Quality Feed
+
+StealthGuard scans live Polymarket prediction markets every 2 hours via automated GitHub Actions, publishing top whale divergences, orderbook spreads, and deterministic CanaryGuard safety receipts directly to the repository:
+
+* 📄 **Markdown Feed**: [LIVE_POLYMARKET_ALPHA.md](./LIVE_POLYMARKET_ALPHA.md)
+* 🤖 **Machine-Readable JSON**: [feed/latest_alpha.json](./feed/latest_alpha.json)
+* 🔄 **Automated Schedule**: Runs every 2 hours via [`workflows/live_alpha_feed.yml`](./workflows/live_alpha_feed.yml)
+
+---
+
 ## 🚢 Production Deployment
 
-### Deploy to Render
-1. Connect your repository to Render.
-2. Select **Blueprint** and point to `render.yaml`.
-3. Set your Base payout wallet in the `WALLET_ADDRESS` environment variable.
+### Live Service
+- **Render Production URL**: `https://stealthguard-402.onrender.com`
+- **Streamable HTTP MCP**: `https://stealthguard-402.onrender.com/mcp`
+- **Discovery Manifest**: `https://stealthguard-402.onrender.com/.well-known/x402`
+- **Apify Actor**: [kuroxreal/stealthguard-402](https://apify.com/kuroxreal/stealthguard-402)
+- **Base Payout Wallet**: `0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1`
 
-### Deploy to Apify
-1. Push repository or run:
-```bash
-apify push
-```
-2. Enable Pay-Per-Event (PPE) in your Actor monetization settings.
