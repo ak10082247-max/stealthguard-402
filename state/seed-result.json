@@ -1,0 +1,36 @@
+{
+  "network": "eip155:8453",
+  "buyer_hot_wallet": "0x6b5f275F028A214fb2e6d21061db791E3b07BEeD",
+  "payout_wallet": "0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1",
+  "usdc_contract": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  "verified_at": "2026-10-14T19:25:50Z",
+  "settlements": [
+    {
+      "tool": "stealth_scrape_and_sanitize",
+      "amount_usdc": "0.02",
+      "amount_microunits": "20000",
+      "transaction_hash": "0x54e838633869582ab994a001310b3854d9d150a3240f16dbdb48610fdbd8a22b",
+      "block_number": 52608276,
+      "status": "SUCCESS",
+      "basescan_link": "https://basescan.org/tx/0x54e838633869582ab994a001310b3854d9d150a3240f16dbdb48610fdbd8a22b"
+    },
+    {
+      "tool": "polymarket_alpha_divergence",
+      "amount_usdc": "0.05",
+      "amount_microunits": "50000",
+      "transaction_hash": "0x89c32520d94c5464de7b59128942433aba2bdacc39dc8c87df4f54fd60b02c00",
+      "block_number": 52608296,
+      "status": "SUCCESS",
+      "basescan_link": "https://basescan.org/tx/0x89c32520d94c5464de7b59128942433aba2bdacc39dc8c87df4f54fd60b02c00"
+    },
+    {
+      "tool": "pre_trade_agent_gate",
+      "amount_usdc": "0.03",
+      "amount_microunits": "30000",
+      "transaction_hash": "0x1606df7842d12f032e1d21ede85a1c5688d5f45fab54a4045e2c9c07aa9dfe5d",
+      "block_number": 52608298,
+      "status": "SUCCESS",
+      "basescan_link": "https://basescan.org/tx/0x1606df7842d12f032e1d21ede85a1c5688d5f45fab54a4045e2c9c07aa9dfe5d"
+    }
+  ]
+}
