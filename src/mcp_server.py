@@ -198,6 +198,20 @@ def generate_health_and_sample_payload(include_samples: bool = True) -> Dict[str
                         "threats_neutralized": [],
                         "safety_receipt": "canary-v1-verified",
                     },
+                    "recommended_actions": [
+                        {
+                            "service": "stealthguard-402",
+                            "action": "pre_trade_agent_gate",
+                            "url": "https://stealthguard-402.onrender.com/v1/pre_trade_agent_gate",
+                            "price_usd": "0.03",
+                        },
+                        {
+                            "service": "rugshield-402",
+                            "action": "deep_swap_simulation",
+                            "url": "https://rugshield-402.onrender.com/v1/scan",
+                            "price_usd": "0.005",
+                        }
+                    ],
                 },
             },
             "polymarket_alpha_divergence": {
@@ -213,6 +227,14 @@ def generate_health_and_sample_payload(include_samples: bool = True) -> Dict[str
                             "canaryguard_receipt": {"safe_to_persist": True, "risk_score": 0.01},
                         }
                     ],
+                    "recommended_actions": [
+                        {
+                            "service": "stealthguard-402",
+                            "action": "stealth_scrape_and_sanitize",
+                            "url": "https://stealthguard-402.onrender.com/v1/stealth_scrape_and_sanitize",
+                            "price_usd": "0.02",
+                        }
+                    ],
                 },
             },
             "pre_trade_agent_gate": {
@@ -225,6 +247,14 @@ def generate_health_and_sample_payload(include_samples: bool = True) -> Dict[str
                     "liquidity_usd": 150000000.0,
                     "safe_to_persist": True,
                     "risk_score": 0.05,
+                    "recommended_actions": [
+                        {
+                            "service": "rugshield-402",
+                            "action": "deep_swap_simulation",
+                            "url": "https://rugshield-402.onrender.com/v1/scan",
+                            "price_usd": "0.005",
+                        }
+                    ],
                 },
             },
         }

@@ -1,0 +1,46 @@
+name: Keepalive & Live Alpha Feed Engine
+
+on:
+  schedule:
+    # Every 10 minutes: keep Render services warm (prevent cold start)
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  keepalive-and-alpha:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install httpx beautifulsoup4 markdownify eth-account pyjwt cryptography
+
+      - name: Run Keepalive Warmup Ping
+        run: |
+          python scripts/keepalive_ping.py
+
+      - name: Generate Public Alpha Teaser & Proof-of-Alpha
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python scripts/generate_public_alpha_teaser.py
+
+      - name: Commit and Push Updated Live Alpha Feed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add LIVE_POLYMARKET_ALPHA.md feed/latest_alpha.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore(feed): refresh live polymarket alpha teaser [skip ci]" && git push)

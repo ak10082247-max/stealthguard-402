@@ -156,12 +156,40 @@ async def scan_polymarket_alpha(
         # Flag any suspicious resolution manipulation
         resolution_manipulation_flagged = overall_receipt["injection_detected"] or overall_receipt["risk_score"] > 0.3
 
+        # Cross-Sell Ecosystem Flywheel: Recommend actions based on market divergence and resolution verification
+        recommended_actions = []
+        whale_alerts = [o for o in scanned_opportunities if o["whale_divergence_flag"]]
+        target_res_url = None
+        if whale_alerts:
+            top_whale = whale_alerts[0]
+            res_cand = top_whale.get("resolution_source", "")
+            if res_cand and (res_cand.startswith("http://") or res_cand.startswith("https://")):
+                target_res_url = res_cand
+
+        recommended_actions.append({
+            "service": "stealthguard-402",
+            "action": "stealth_scrape_and_sanitize",
+            "url": "https://stealthguard-402.onrender.com/v1/stealth_scrape_and_sanitize",
+            "price_usd": "0.02",
+            "description": "Bypass anti-bot protection on breaking news or market oracle resolution sources to verify truth ground.",
+            "params": {"url": target_res_url or "https://news.google.com", "render_js": True}
+        })
+        recommended_actions.append({
+            "service": "canaryguard-402",
+            "action": "sanitize_content",
+            "url": "https://canaryguard-402.onrender.com/v1/sanitize",
+            "price_usd": "0.003",
+            "description": "Deterministic prompt-injection sanitization for external trading news articles and discord posts.",
+            "params": {"content": f"Verify market: {whale_alerts[0]['question'] if whale_alerts else 'Top Alpha Market'}", "strict_mode": True}
+        })
+
         return {
             "markets_scanned": len(scanned_opportunities),
-            "whale_divergence_alerts": [o for o in scanned_opportunities if o["whale_divergence_flag"]],
+            "whale_divergence_alerts": whale_alerts,
             "opportunities": scanned_opportunities,
             "resolution_manipulation_flagged": resolution_manipulation_flagged,
             "canaryguard_receipt": overall_receipt,
             "safe_to_persist": overall_receipt["safe_to_persist"] and not resolution_manipulation_flagged,
             "risk_score": overall_receipt["risk_score"],
+            "recommended_actions": recommended_actions,
         }

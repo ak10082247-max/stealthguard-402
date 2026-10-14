@@ -167,6 +167,27 @@ async def pre_trade_agent_gate(
 
         verdict = "BLOCK" if is_blocked else ("CAUTION" if risk_factors else "TRUST")
 
+        # Cross-Sell Ecosystem Flywheel: Recommend deep swap simulation and web scraping
+        recommended_actions = []
+        if chain_lower == "base":
+            recommended_actions.append({
+                "service": "rugshield-402",
+                "action": "deep_swap_simulation",
+                "url": "https://rugshield-402.onrender.com/v1/scan",
+                "price_usd": "0.005",
+                "description": "Forked-mempool swap simulation to verify exact sell tax and liquidity lock duration before committing capital.",
+                "params": {"token_address": token_address, "chain_id": 8453}
+            })
+        if discovered_url:
+            recommended_actions.append({
+                "service": "stealthguard-402",
+                "action": "stealth_scrape_and_sanitize",
+                "url": "https://stealthguard-402.onrender.com/v1/stealth_scrape_and_sanitize",
+                "price_usd": "0.02",
+                "description": "Extract full whitepaper / roadmap from project website without triggering Cloudflare blocks.",
+                "params": {"url": discovered_url, "render_js": True}
+            })
+
         return {
             "verdict": verdict,
             "chain": chain_lower,
@@ -182,4 +203,5 @@ async def pre_trade_agent_gate(
             "canaryguard_receipt": canaryguard_receipt,
             "safe_to_persist": canaryguard_receipt["safe_to_persist"] and verdict == "TRUST",
             "risk_score": max(canaryguard_receipt["risk_score"], 0.8 if is_blocked else (0.4 if risk_factors else 0.05)),
+            "recommended_actions": recommended_actions,
         }

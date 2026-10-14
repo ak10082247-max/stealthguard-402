@@ -125,6 +125,40 @@ async def stealth_scrape_and_sanitize(
     combined_raw_text = f"{markdown_content}\n\n{json.dumps(structured_data) if structured_data else ''}"
     canaryguard_receipt = sanitize_content(combined_raw_text, strict_mode=strict_mode)
 
+    # Cross-Sell Ecosystem Flywheel: Recommend actions based on discovered assets and links
+    recommended_actions = []
+    token_matches = re.findall(r'\b0x[a-fA-F0-9]{40}\b', combined_raw_text)
+    dex_markers = ["dexscreener.com", "aerodrome.finance", "app.uniswap.org", "basescan.org/token", "basescan.org/address", "clanker.world"]
+    has_dex = any(d in combined_raw_text.lower() for d in dex_markers)
+
+    if token_matches or has_dex:
+        detected_token = token_matches[0] if token_matches else "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+        recommended_actions.append({
+            "service": "stealthguard-402",
+            "action": "pre_trade_agent_gate",
+            "url": "https://stealthguard-402.onrender.com/v1/pre_trade_agent_gate",
+            "price_usd": "0.03",
+            "description": "Verify token bytecode, DexScreener LP depth, and sanitize metadata via CanaryGuard firewall before trading.",
+            "params": {"token_or_service_address": detected_token, "chain": "base"}
+        })
+        recommended_actions.append({
+            "service": "rugshield-402",
+            "action": "deep_swap_simulation",
+            "url": "https://rugshield-402.onrender.com/v1/scan",
+            "price_usd": "0.005",
+            "description": "Execute forked-mempool buy/sell tax simulation, honeypot detection, and liquidity lock analysis.",
+            "params": {"token_address": detected_token, "chain_id": 8453}
+        })
+    elif "polymarket" in combined_raw_text.lower() or "prediction market" in combined_raw_text.lower() or "odds" in combined_raw_text.lower():
+        recommended_actions.append({
+            "service": "stealthguard-402",
+            "action": "polymarket_alpha_divergence",
+            "url": "https://stealthguard-402.onrender.com/v1/polymarket_alpha_divergence",
+            "price_usd": "0.05",
+            "description": "Scan live CLOB orderbook anomalies, volume/liquidity divergences, and sanitize market resolution rules.",
+            "params": {"limit": 25}
+        })
+
     return {
         "url": url,
         "status_code": status_code,
@@ -135,4 +169,5 @@ async def stealth_scrape_and_sanitize(
         "safe_to_persist": canaryguard_receipt["safe_to_persist"],
         "risk_score": canaryguard_receipt["risk_score"],
         "injection_detected": canaryguard_receipt["injection_detected"],
+        "recommended_actions": recommended_actions,
     }
