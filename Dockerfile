@@ -1,12 +1,5 @@
 FROM python:3.11-slim
 
-# Lean system dependencies for Scrapling, curl-cffi, git, and TLS certificates
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    git \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /usr/src/app
 
 # Install Python packages
