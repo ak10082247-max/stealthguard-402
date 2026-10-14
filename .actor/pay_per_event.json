@@ -1,0 +1,20 @@
+{
+  "actorSpecification": 1,
+  "events": {
+    "stealth_scrape_and_sanitize": {
+      "eventTitle": "Stealth Scrape and Sanitize",
+      "eventDescription": "Cloudflare-bypassing stealth fetch + MarkItDown + CanaryGuard prompt-injection firewall",
+      "eventPriceUsd": 0.02
+    },
+    "polymarket_alpha_divergence": {
+      "eventTitle": "Polymarket Alpha Divergence Scan",
+      "eventDescription": "Gamma & CLOB orderbook divergence scan + resolution source scraping & prompt-injection audit",
+      "eventPriceUsd": 0.025
+    },
+    "pre_trade_agent_gate": {
+      "eventTitle": "Pre-Trade Agent Gate",
+      "eventDescription": "On-chain honeypot/liquidity verification + token metadata prompt injection firewall",
+      "eventPriceUsd": 0.03
+    }
+  }
+}

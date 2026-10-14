@@ -1,0 +1,23 @@
+{
+  "name": "stealthguard-402",
+  "version": "1.0.0",
+  "description": "Stealth web extraction, Polymarket alpha, and on-chain pre-trade gating fused with CanaryGuard prompt-injection firewall.",
+  "type": "module",
+  "scripts": {
+    "start": "uvicorn src.api:app --host 0.0.0.0 --port 8000",
+    "test": "pytest -v",
+    "apify": "python apify_main.py"
+  },
+  "keywords": [
+    "x402",
+    "base",
+    "mcp",
+    "prompt-injection",
+    "scrapling",
+    "polymarket",
+    "apify",
+    "security"
+  ],
+  "author": "ak10082247-max",
+  "license": "MIT"
+}

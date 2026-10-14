@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: stealthguard-402
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: standard
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: WALLET_ADDRESS
+        value: 0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1
+      - key: PUBLIC_URL
+        value: https://stealthguard-402.onrender.com
+      - key: PORT
+        value: 10000
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: CDP_API_KEY_ID
+        sync: false
+      - key: CDP_API_KEY_SECRET
+        sync: false

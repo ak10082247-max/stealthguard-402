@@ -1,0 +1,79 @@
+{
+  "title": "StealthGuard-402 Input",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "tool": {
+      "title": "Tool to Execute",
+      "type": "string",
+      "description": "Select the tool pipeline to run",
+      "enum": [
+        "stealth_scrape_and_sanitize",
+        "polymarket_alpha_divergence",
+        "pre_trade_agent_gate",
+        "health_and_sample"
+      ],
+      "default": "stealth_scrape_and_sanitize",
+      "editor": "select"
+    },
+    "url": {
+      "title": "Target URL",
+      "type": "string",
+      "description": "Destination URL for stealth_scrape_and_sanitize",
+      "editor": "textfield",
+      "prefill": "https://example.com"
+    },
+    "extract_schema": {
+      "title": "Extract Schema",
+      "type": "object",
+      "description": "Optional JSON schema for structured field extraction",
+      "editor": "json"
+    },
+    "render_js": {
+      "title": "Render JavaScript",
+      "type": "boolean",
+      "description": "Activate Patchright/Playwright stealth browser rendering for Cloudflare Turnstile / SPAs",
+      "default": false
+    },
+    "category": {
+      "title": "Polymarket Category",
+      "type": "string",
+      "description": "Optional category filter for polymarket_alpha_divergence (e.g. crypto, politics)",
+      "editor": "textfield"
+    },
+    "limit": {
+      "title": "Market Limit",
+      "type": "integer",
+      "description": "Max markets to scan (1-50)",
+      "default": 25,
+      "minimum": 1,
+      "maximum": 50
+    },
+    "token_or_service_address": {
+      "title": "Token / Service Address",
+      "type": "string",
+      "description": "Contract address or x402 resource for pre_trade_agent_gate",
+      "editor": "textfield"
+    },
+    "chain": {
+      "title": "Blockchain",
+      "type": "string",
+      "enum": ["base", "solana"],
+      "default": "base",
+      "editor": "select"
+    },
+    "target_url": {
+      "title": "Token Website URL",
+      "type": "string",
+      "description": "Optional website URL to scrape and audit for prompt injection",
+      "editor": "textfield"
+    },
+    "strict_mode": {
+      "title": "Strict Mode",
+      "type": "boolean",
+      "description": "CanaryGuard deterministic sanitization strictness",
+      "default": true
+    }
+  },
+  "required": ["tool"]
+}
