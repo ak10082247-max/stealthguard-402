@@ -1,6 +1,26 @@
 # StealthGuard-402 🛡️⚡
 
-> High-margin, production-ready revenue service fusing **CanaryGuard** (`io.github.ak10082247-max/canaryguard-402`) with **Scrapling** anti-bot stealth extraction and **Polymarket/on-chain prediction alpha**, monetized concurrently via **Direct x402 on Base** AND **Apify Pay-Per-Event (PPE)**.
+[![Base Mainnet](https://img.shields.io/badge/Network-Base%20Mainnet%20(8453)-blue)](https://base.org)
+[![MCPize](https://img.shields.io/badge/MCPize-Subscribe%20%2419%2Fmo-8A2BE2?logo=stripe&logoColor=white)](https://mcpize.com)
+[![Apify PPE](https://img.shields.io/badge/Apify-Pay--Per--Event-00A65A?logo=apify&logoColor=white)](https://apify.com)
+[![Protocol](https://img.shields.io/badge/Protocol-x402%20v2-green)](https://x402.org)
+
+> High-margin, production-ready revenue service fusing **CanaryGuard** (`io.github.ak10082247-max/canaryguard-402`) with **Scrapling** anti-bot stealth extraction and **Polymarket/on-chain prediction alpha**, monetized concurrently via **Direct x402 on Base**, **Apify Pay-Per-Event (PPE)**, and **MCPize Fiat Subscriptions**.
+
+---
+
+## 💳 Subscribe on MCPize / Apify ($19/mo Pro)
+
+For developers, automated agents, and enterprise teams that prefer traditional fiat billing (credit card via Stripe) over per-request crypto micro-settlements, **StealthGuard-402** is available as a turnkey hosted subscription on **[MCPize](https://mcpize.com)** and **Apify**:
+
+| Plan | Price | Monthly Quota | Key Features |
+|---|---|---|---|
+| **Starter** | **$9.99 / mo** | 1,000 calls | Scrapling anti-bot bypass, CanaryGuard injection firewall, Polymarket divergence |
+| **Pro (Recommended)** | **$19.99 / mo** | 10,000 calls | Pre-warmed cache (<50ms), DEX pre-trade honeypot gating, priority SLA |
+| **Enterprise** | **$49.99 / mo** | 50,000 calls | Dedicated isolated instance, custom fingerprint rotation, developer channel |
+
+- **Instant 1-Click Subscribe**: Paste `https://github.com/ak10082247-max/stealthguard-402` into your **[MCPize Dashboard](https://mcpize.com/dashboard)**.
+- **Direct Remote MCP Endpoint**: `https://stealthguard-402.onrender.com/mcp`
 
 ---
 
