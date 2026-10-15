@@ -136,16 +136,20 @@ def load_cdp_credentials() -> Tuple[Optional[str], Optional[str]]:
 def generate_cdp_jwt(key_id: str, private_key: str, method: str, host: str, path: str) -> str:
     """Generates an ES256-signed JWT for Coinbase CDP Facilitator authentication."""
     now = int(time.time())
+    uri_str = f"{method.upper()} {host}{path}"
     payload = {
         "sub": key_id,
         "iss": "cdp",
+        "aud": ["cdp_service"],
         "nbf": now,
         "exp": now + 120,
-        "uri": f"{method.upper()} {host}{path}",
+        "uri": uri_str,
+        "uris": [uri_str],
     }
     headers = {
         "alg": "ES256",
         "kid": key_id,
+        "typ": "JWT",
         "nonce": secrets.token_hex(16),
     }
     clean_key = clean_pem_private_key(private_key)
@@ -184,10 +188,10 @@ def verify_via_cdp_facilitator(
             except Exception:
                 res_data = {"error": resp.text}
 
-            if resp.status_code == 200 and res_data.get("valid"):
+            if resp.status_code == 200 and (res_data.get("isValid") or res_data.get("valid")):
                 return True, res_data, None
             else:
-                err = res_data.get("errorMessage") or res_data.get("error") or f"HTTP {resp.status_code}"
+                err = res_data.get("invalidReason") or res_data.get("errorMessage") or res_data.get("error") or f"HTTP {resp.status_code}"
                 return False, None, str(err)
     except Exception as e:
         logger.warning(f"CDP verify error: {e}")
@@ -648,38 +652,39 @@ def verify_x402_payment(
         return True, payment_info, None, 200
 
     # Production on-chain settlement via Coinbase CDP Facilitator
-    resource_obj = {
+    pay_to_checksum = get_recipient_address()
+    resource_obj = parsed.get("resource") if isinstance(parsed.get("resource"), dict) else {
         "url": res_url,
         "description": desc,
         "mimeType": "application/json",
     }
-    payment_requirements = {
+    default_requirements = {
         "scheme": "exact",
         "network": NETWORK,
         "amount": str(required_units),
         "asset": ASSET,
-        "payTo": pay_to,
+        "payTo": pay_to_checksum,
         "maxTimeoutSeconds": 300,
         "extra": {
             "name": "USD Coin",
             "version": "2",
         },
-        "resource": resource_obj,
         "description": desc,
         "mimeType": "application/json",
-        "extensions": discovery,
     }
+    client_accepted = parsed.get("accepted") if isinstance(parsed.get("accepted"), dict) else None
+    payment_requirements = client_accepted if client_accepted else default_requirements
 
     v2_payment_payload = {
         "x402Version": 2,
         "resource": resource_obj,
-        "extensions": discovery,
+        "extensions": parsed.get("extensions") or discovery,
         "accepted": payment_requirements,
         "payload": {
             "signature": sig,
             "authorization": {
                 "from": auth.get("from") or from_addr,
-                "to": auth.get("to") or pay_to,
+                "to": auth.get("to") or pay_to_checksum,
                 "value": str(value),
                 "validAfter": str(valid_after),
                 "validBefore": str(valid_before),
