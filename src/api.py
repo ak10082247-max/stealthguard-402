@@ -614,6 +614,7 @@ async def security_x402_endpoint_verifier_route(request: Request):
 # MCP Streamable HTTP JSON-RPC endpoint
 # ==============================================================================
 @app.post("/mcp", include_in_schema=False)
+@app.post("/", include_in_schema=False)
 async def mcp_post(request: Request):
     raw_payment_header = request.headers.get("PAYMENT-SIGNATURE") or request.headers.get("X-PAYMENT")
     try:
