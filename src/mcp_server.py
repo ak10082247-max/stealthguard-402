@@ -41,7 +41,7 @@ MCP_TOOLS: List[Dict[str, Any]] = [
             "properties": {
                 "category": {"type": "string", "description": "Category filter (crypto, politics, fed, ai)"},
                 "limit": {"type": "integer", "default": 25, "description": "Max markets to analyze"},
-                "strict_mode": {"type": "boolean", "default": True},
+                "strict_mode": {"type": "boolean", "default": True, "description": "Deterministic prompt-injection sanitization strictness"},
             },
         },
     },
@@ -52,9 +52,9 @@ MCP_TOOLS: List[Dict[str, Any]] = [
             "type": "object",
             "properties": {
                 "token_or_service_address": {"type": "string", "description": "EVM or Solana address"},
-                "chain": {"type": "string", "enum": ["base", "solana"], "default": "base"},
+                "chain": {"type": "string", "enum": ["base", "solana"], "default": "base", "description": "Blockchain ecosystem to audit (base or solana)"},
                 "target_url": {"type": "string", "description": "Optional associated project URL"},
-                "strict_mode": {"type": "boolean", "default": True},
+                "strict_mode": {"type": "boolean", "default": True, "description": "Deterministic prompt-injection sanitization strictness"},
             },
             "required": ["token_or_service_address"],
         },
@@ -65,7 +65,7 @@ MCP_TOOLS: List[Dict[str, Any]] = [
         "inputSchema": {
             "type": "object",
             "properties": {
-                "include_samples": {"type": "boolean", "default": True},
+                "include_samples": {"type": "boolean", "default": True, "description": "Include sample tool calls and discovery payloads"},
             },
         },
     },
@@ -158,7 +158,19 @@ MCP_TOOLS: List[Dict[str, Any]] = [
     },
 ]
 
-# Ensure Glama TDQS compliance for all tools
+# Output schema for MCP 2024-11-05 & Smithery Quality Score compliance
+DEFAULT_OUTPUT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "status": {"type": "string", "description": "Execution status (success or error)"},
+        "content": {"type": "array", "description": "Structured text or data content returned to the LLM agent"},
+        "data": {"type": "object", "description": "Sanitized domain data payload or verification metrics"},
+        "payment": {"type": "object", "description": "x402 protocol payment settlement and settlement receipt details"},
+    },
+    "required": ["status"],
+}
+
+# Ensure Glama TDQS & Smithery Capability compliance for all tools
 for _tool in MCP_TOOLS:
     if "annotations" not in _tool:
         _tool["annotations"] = {
@@ -166,6 +178,8 @@ for _tool in MCP_TOOLS:
             "destructiveHint": False,
             "openWorldHint": True,
         }
+    if "outputSchema" not in _tool:
+        _tool["outputSchema"] = DEFAULT_OUTPUT_SCHEMA
 
 def generate_health_and_sample_payload(include_samples: bool = True) -> Dict[str, Any]:
     """Generates the discovery payload for free exploration."""
@@ -225,10 +239,19 @@ async def handle_mcp_request(
                 "protocolVersion": "2024-11-05",
                 "capabilities": {
                     "tools": {"listChanged": False},
+                    "resources": {"subscribe": False, "listChanged": False},
+                    "prompts": {"listChanged": False},
                 },
                 "serverInfo": {
-                    "name": SERVICE_NAME,
+                    "name": "stealthguard-402",
+                    "displayName": "StealthGuard-402",
+                    "title": "StealthGuard 402",
                     "version": SERVICE_VERSION,
+                    "description": "Stealth web scraper bypassing Cloudflare anti-bot via Scrapling, extracts clean DOM to Markdown, and sanitizes prompt injections with x402 micropayments on Base.",
+                    "homepage": "https://stealthguard-402.onrender.com",
+                    "websiteUrl": "https://stealthguard-402.onrender.com",
+                    "icon": "https://stealthguard-402.onrender.com/favicon.ico",
+                    "iconUrl": "https://stealthguard-402.onrender.com/favicon.ico",
                 },
             },
         }, None
@@ -236,6 +259,14 @@ async def handle_mcp_request(
     # 2. Ping
     if method == "ping":
         return {"jsonrpc": "2.0", "id": req_id, "result": {}}, None
+
+    # 2b. Resources List (Return clean empty array for Quality Score)
+    if method in ("resources/list", "resources/templates/list"):
+        return {"jsonrpc": "2.0", "id": req_id, "result": {"resources": []}}, None
+
+    # 2c. Prompts List (Return clean empty array for Quality Score)
+    if method == "prompts/list":
+        return {"jsonrpc": "2.0", "id": req_id, "result": {"prompts": []}}, None
 
     # 3. Tools List
     if method == "tools/list":

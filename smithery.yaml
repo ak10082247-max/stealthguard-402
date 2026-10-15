@@ -1,20 +1,21 @@
+name: stealthguard-402
+displayName: StealthGuard 402
+description: Stealth web scraper bypassing Cloudflare anti-bot via Scrapling, extracts clean DOM to Markdown, and sanitizes prompt injections with x402 micropayments on Base.
+homepage: https://stealthguard-402.onrender.com
+websiteUrl: https://stealthguard-402.onrender.com
+iconUrl: https://stealthguard-402.onrender.com/favicon.ico
+icon: https://stealthguard-402.onrender.com/favicon.ico
+repository: https://github.com/ak10082247-max/stealthguard-402
+
 runtime: container
 build:
   dockerfile: Dockerfile
   dockerBuildPath: .
 startCommand:
-  type: stdio
-  command: npx
-  args:
-    - -y
-    - stealthguard-mcp
+  type: http
+  url: https://stealthguard-402.onrender.com/mcp
   configSchema:
     type: object
-    properties:
-      STEALTHGUARD_URL:
-        type: string
-        description: Custom StealthGuard HTTP MCP endpoint URL (defaults to live production service)
-        default: https://stealthguard-402.onrender.com/mcp
+    properties: {}
     additionalProperties: false
-  exampleConfig:
-    STEALTHGUARD_URL: https://stealthguard-402.onrender.com/mcp
+  exampleConfig: {}

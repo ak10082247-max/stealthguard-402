@@ -350,6 +350,31 @@ async def agent_card():
         },
     }
 
+@app.get("/.well-known/mcp/server-card.json", include_in_schema=False)
+@app.get("/.well-known/mcp.json", include_in_schema=False)
+@app.get("/.well-known/server-card.json", include_in_schema=False)
+async def mcp_server_card():
+    public_url = get_public_url()
+    return {
+        "serverInfo": {
+            "name": "stealthguard-402",
+            "displayName": "StealthGuard 402",
+            "version": "1.1.0",
+            "description": "Stealth web scraper bypassing Cloudflare anti-bot via Scrapling, extracts clean DOM to Markdown, and sanitizes prompt injections with x402 micropayments on Base.",
+            "homepage": public_url,
+            "websiteUrl": public_url,
+            "icon": f"{public_url}/favicon.ico",
+            "iconUrl": f"{public_url}/favicon.ico",
+        },
+        "authentication": {"required": False},
+        "transport": {"type": "streamable-http", "url": f"{public_url}/mcp"},
+        "capabilities": {
+            "tools": {"count": len(MCP_TOOLS)},
+            "resources": {"count": 0},
+            "prompts": {"count": 0},
+        },
+    }
+
 @app.get("/.well-known/x402", include_in_schema=False)
 @app.get("/.well-known/x402.json", include_in_schema=False)
 async def x402_manifest():
