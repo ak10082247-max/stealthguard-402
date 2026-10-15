@@ -13,3 +13,14 @@ dist/
 .github/
 RENDER_ENV_VARS_TO_PASTE.env
 *.key.json
+scripts/audit_*
+scripts/find_*
+scripts/locate_*
+scripts/check_*
+scripts/test_*
+scripts/inspect_*
+scripts/resolve_*
+scripts/live_fleet_*
+scripts/fetch_*
+scripts/fetch_pr_*
+scripts/*.json
