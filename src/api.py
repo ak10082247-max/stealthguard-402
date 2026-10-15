@@ -23,7 +23,7 @@ from .config import (
     get_public_url,
     AGENT_CONTINUATION,
 )
-from .delivery_recorder import record_delivery, get_recent_deliveries
+from .delivery_recorder import record_delivery, get_recent_deliveries, get_paid_deliveries
 from .sanitizer import sanitize_content
 from .scrapling_engine import stealth_scrape_and_sanitize
 from .polymarket_engine import scan_polymarket_alpha
@@ -572,9 +572,12 @@ async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict
 @app.get("/v1/telemetry/deliveries", include_in_schema=False)
 async def deliveries_telemetry():
     records = get_recent_deliveries()
+    paid = get_paid_deliveries()
     return {
         "service": SERVICE_NAME,
         "status": "active",
+        "paid_count": len(paid),
+        "paid_deliveries": paid,
         "count": len(records),
         "deliveries": records,
     }
