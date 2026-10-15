@@ -2,27 +2,13 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.ak10082247-max/stealthguard-402",
   "title": "StealthGuard 402",
-  "description": "Stealth web extraction, Polymarket alpha, and on-chain pre-trade gating fused with CanaryGuard prompt-injection firewall.",
+  "description": "Stealth web extraction, Polymarket alpha, and on-chain pre-trade gating via x402 on Base.",
   "version": "1.0.0",
   "websiteUrl": "https://stealthguard-402.onrender.com",
   "repository": {
     "url": "https://github.com/ak10082247-max/stealthguard-402",
     "source": "github"
   },
-  "packages": [
-    {
-      "registry": "npm",
-      "package": "stealthguard-mcp",
-      "command": "npx",
-      "args": ["-y", "stealthguard-mcp"]
-    },
-    {
-      "registry": "pypi",
-      "package": "stealthguard-mcp",
-      "command": "uvx",
-      "args": ["stealthguard-mcp"]
-    }
-  ],
   "remotes": [
     {
       "type": "streamable-http",

@@ -24,3 +24,6 @@ scripts/live_fleet_*
 scripts/fetch_*
 scripts/fetch_pr_*
 scripts/*.json
+
+mcp-publisher.exe
+
