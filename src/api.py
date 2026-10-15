@@ -21,7 +21,9 @@ from .config import (
     TOOL_PRICING,
     get_recipient_address,
     get_public_url,
+    AGENT_CONTINUATION,
 )
+from .delivery_recorder import record_delivery, get_recent_deliveries
 from .sanitizer import sanitize_content
 from .scrapling_engine import stealth_scrape_and_sanitize
 from .polymarket_engine import scan_polymarket_alpha
@@ -432,6 +434,7 @@ async def health_and_sample(include_samples: bool = True):
 # Dispatcher for Paid Endpoints (Dual GET + POST, Sub-50ms Cache Warmer)
 # ==============================================================================
 async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict[str, Any]) -> Response:
+    start_time = time.time()
     payment_header = request.headers.get("PAYMENT-SIGNATURE") or request.headers.get("X-PAYMENT")
     res_url = enforce_https(str(request.url).split("?")[0])
 
@@ -449,6 +452,20 @@ async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict
             reason=err_msg,
             input_schema={"type": "object", "properties": {}},
             example_input=default_args,
+        )
+        latency_ms = (time.time() - start_time) * 1000
+        client_ip = request.client.host if request.client else "unknown"
+        record_delivery(
+            endpoint=request.url.path,
+            method=request.method,
+            status_code=status_code,
+            latency_ms=latency_ms,
+            user_agent=request.headers.get("user-agent", "none"),
+            client_ip=client_ip,
+            referer=request.headers.get("referer", "direct"),
+            request_input=default_args,
+            raw_payment_header=payment_header,
+            response_preview=json.dumps(challenge_body)[:300],
         )
         return JSONResponse(status_code=status_code, content=challenge_body, headers=headers)
 
@@ -528,11 +545,39 @@ async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict
                 "recommended_actions": get_ecosystem_recommendations("general"),
             }
 
+    result["agent_continuation"] = AGENT_CONTINUATION
     response_headers = {}
     if payment_info:
         response_headers["PAYMENT-RESPONSE"] = create_payment_response_header(payment_info)
 
+    latency_ms = (time.time() - start_time) * 1000
+    client_ip = request.client.host if request.client else "unknown"
+    record_delivery(
+        endpoint=request.url.path,
+        method=request.method,
+        status_code=200,
+        latency_ms=latency_ms,
+        user_agent=request.headers.get("user-agent", "none"),
+        client_ip=client_ip,
+        referer=request.headers.get("referer", "direct"),
+        request_input=merged_args,
+        raw_payment_header=payment_header,
+        payment_response_header=response_headers.get("PAYMENT-RESPONSE"),
+        response_preview=json.dumps(result)[:300],
+    )
+
     return JSONResponse(content=result, headers=response_headers)
+
+# Telemetry Delivery Flight Recorder
+@app.get("/v1/telemetry/deliveries", include_in_schema=False)
+async def deliveries_telemetry():
+    records = get_recent_deliveries()
+    return {
+        "service": SERVICE_NAME,
+        "status": "active",
+        "count": len(records),
+        "deliveries": records,
+    }
 
 # ==============================================================================
 # The 10 Clean Paid x402 Endpoints (Dual GET + POST)
