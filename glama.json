@@ -1,11 +1,5 @@
 {
   "$schema": "https://glama.ai/mcp/schemas/server.json",
   "maintainers": ["ak10082247-max"],
-  "homepage": "https://stealthguard-402.onrender.com",
-  "packages": [
-    {
-      "registry": "npm",
-      "package": "stealthguard-mcp"
-    }
-  ]
+  "homepage": "https://stealthguard-402.onrender.com"
 }
