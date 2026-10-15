@@ -174,6 +174,7 @@ async def favicon():
     return Response(status_code=204)
 
 @app.get("/health", include_in_schema=False)
+@app.get("/ping", include_in_schema=False)
 async def health():
     return {
         "status": "ok",
