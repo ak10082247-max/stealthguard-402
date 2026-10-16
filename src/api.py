@@ -652,11 +652,45 @@ async def hackernews_ai_digest_route(request: Request):
 async def security_prompt_firewall_route(request: Request):
     return await execute_paid_tool("security_prompt_firewall", request, {"text": "Test agent text"})
 
-# 10. x402 Endpoint Verifier ($0.002 USDC)
+# 10. x402 Endpoint Verifier ($0.01 USDC)
 @app.get("/v1/security/x402-endpoint-verifier", summary="x402 Endpoint Authenticity Verifier", tags=["Security Gate & Extraction"])
 @app.post("/v1/security/x402-endpoint-verifier", summary="x402 Endpoint Authenticity Verifier", tags=["Security Gate & Extraction"])
 async def security_x402_endpoint_verifier_route(request: Request):
     return await execute_paid_tool("security_x402_endpoint_verifier", request, {"endpoint_url": f"{get_public_url()}/v1/stealth_scrape_and_sanitize"})
+
+# 11. Deep Web Dossier ($0.25 USDC) - HIGH-TICKET #1
+@app.get("/v1/research/deep-web-dossier", summary="Deep Web Research Dossier", tags=["Intelligence & High-Ticket"])
+@app.post("/v1/research/deep-web-dossier", summary="Deep Web Research Dossier", tags=["Intelligence & High-Ticket"])
+async def research_deep_web_dossier_route(request: Request):
+    return await execute_paid_tool("research_deep_web_dossier", request, {"topic": "Base L2 autonomous AI agent economy and x402 protocol adoption", "depth": "comprehensive"})
+
+# 12. Perpetual Funding & Basis Oracle ($0.05 USDC) - HIGH-TICKET #2
+@app.get("/v1/oracle/perp-funding-and-basis", summary="Perpetual Funding & Basis Oracle", tags=["Intelligence & High-Ticket"])
+@app.post("/v1/oracle/perp-funding-and-basis", summary="Perpetual Funding & Basis Oracle", tags=["Intelligence & High-Ticket"])
+async def perp_funding_and_basis_route(request: Request):
+    return await execute_paid_tool("oracle_perp_funding_and_basis", request, {"assets": ["BTC", "ETH", "SOL"]})
+
+# 13. Polymarket Whale Orderflow ($0.10 USDC) - HIGH-TICKET #3
+@app.get("/v1/alpha/polymarket-whale-orderflow", summary="Polymarket Whale Orderflow Imbalance", tags=["Intelligence & High-Ticket"])
+@app.post("/v1/alpha/polymarket-whale-orderflow", summary="Polymarket Whale Orderflow Imbalance", tags=["Intelligence & High-Ticket"])
+async def polymarket_whale_orderflow_route(request: Request):
+    return await execute_paid_tool("alpha_polymarket_whale_orderflow", request, {"min_order_usd": 10000, "include_cross_venue": True})
+
+# 14. Security Attestation Bundle ($0.05 USDC) - HIGH-TICKET #4
+@app.get("/v1/security/attestation-bundle", summary="Full Cryptographic Security Attestation Bundle", tags=["Security Gate & Extraction"])
+@app.post("/v1/security/attestation-bundle", summary="Full Cryptographic Security Attestation Bundle", tags=["Security Gate & Extraction"])
+async def security_attestation_bundle_route(request: Request):
+    return await execute_paid_tool("security_attestation_bundle", request, {
+        "prompt_text": "Verify swap parameters for Base USDC",
+        "target_url": "https://app.uniswap.org",
+        "token_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    })
+
+# 15. Topic News Scanner ($0.02 USDC) - HIGH-TICKET #5
+@app.get("/v1/research/topic-news-scanner", summary="Real-Time Sanitized Topic News Scanner", tags=["Intelligence & High-Ticket"])
+@app.post("/v1/research/topic-news-scanner", summary="Real-Time Sanitized Topic News Scanner", tags=["Intelligence & High-Ticket"])
+async def research_topic_news_scanner_route(request: Request):
+    return await execute_paid_tool("research_topic_news_scanner", request, {"query": "x402 autonomous agents Base"})
 
 # ==============================================================================
 # MCP Streamable HTTP JSON-RPC endpoint
@@ -693,8 +727,8 @@ def custom_openapi():
 
     openapi_schema = get_openapi(
         title="StealthGuard-402",
-        version="1.1.0",
-        description="Stealth web extraction and prediction-market/on-chain alpha fused with CanaryGuard prompt-injection firewall.",
+        version=SERVICE_VERSION,
+        description="Stealth web extraction, on-chain intelligence, and prediction alpha fused with CanaryGuard prompt-injection firewall.",
         routes=app.routes,
     )
     openapi_schema["info"]["contact"] = {
