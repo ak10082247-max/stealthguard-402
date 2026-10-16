@@ -73,7 +73,8 @@ async def warm_polymarket_feeds():
             {"market": "Ethereum gas fee average below 5 gwei", "volume_usd": 3410000, "clob_imbalance_bps": 180.0, "whale_sentiment": "NEUTRAL", "divergence_score": 0.76},
         ]
     
-    sanitized_whales, _ = sanitize_content(str(whales))
+    receipt = sanitize_content(str(whales))
+    sanitized_whales = receipt.get("sanitized_content", str(whales))
     CACHE_STORE["polymarket_top_whales"] = {
         "status": "success",
         "feed": "polymarket_top_whales",

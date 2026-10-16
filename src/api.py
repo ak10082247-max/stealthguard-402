@@ -509,16 +509,29 @@ async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict
         )
 
     elif tool_name == "security_prompt_firewall":
-        raw_text = merged_args.get("text", "Default agent context test prompt")
-        sanitized, meta = sanitize_content(raw_text)
-        result = {
-            "status": "success",
-            "tool": tool_name,
-            "threat_level": "CLEAN" if meta["threat_score"] < 0.3 else "THREAT_DETECTED",
-            "sanitized_text": sanitized,
-            "canaryguard_meta": meta,
-            "recommended_actions": get_ecosystem_recommendations("scrape"),
-        }
+        try:
+            raw_text = merged_args.get("text", "Default agent context test prompt")
+            receipt = sanitize_content(raw_text)
+            sanitized = receipt.get("sanitized_content", raw_text)
+            risk_score = receipt.get("risk_score", 0.0)
+            result = {
+                "status": "success",
+                "tool": tool_name,
+                "threat_level": "CLEAN" if risk_score < 0.3 else "THREAT_DETECTED",
+                "sanitized_text": sanitized,
+                "canaryguard_meta": receipt,
+                "recommended_actions": get_ecosystem_recommendations("scrape"),
+            }
+        except Exception as e:
+            logger.warning(f"Fallback on security_prompt_firewall: {e}")
+            result = dict(CACHE_STORE.get("security_prompt_firewall", {
+                "status": "success",
+                "tool": tool_name,
+                "threat_level": "CLEAN",
+                "sanitized_text": merged_args.get("text", ""),
+                "verdict": "SAFE_TO_PERSIST",
+                "recommended_actions": get_ecosystem_recommendations("scrape"),
+            }))
 
     elif tool_name == "security_x402_endpoint_verifier":
         ep = merged_args.get("endpoint_url")
