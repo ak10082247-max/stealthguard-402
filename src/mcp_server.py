@@ -18,146 +18,6 @@ from .cache_warmer import CACHE_STORE, get_ecosystem_recommendations
 
 logger = logging.getLogger("stealthguard.mcp")
 
-# All 19 Tools (18 Paid + 1 Free Sample Discovery)
-MCP_TOOLS: List[Dict[str, Any]] = [
-    {
-        "name": "stealth_scrape_and_sanitize",
-        "description": "Bypasses Cloudflare Turnstile/anti-bot via Scrapling StealthyFetcher, converts DOM to token-compressed LLM Markdown, and runs CanaryGuard deterministic prompt-injection firewall. Price: $0.005 USDC on Base.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "url": {"type": "string", "description": "Target destination URL"},
-                "render_js": {"type": "boolean", "default": False, "description": "Enable stealth headless browser rendering"},
-                "strict_mode": {"type": "boolean", "default": True, "description": "Deterministic sanitization strictness"},
-            },
-            "required": ["url"],
-        },
-    },
-    {
-        "name": "polymarket_alpha_divergence",
-        "description": "Scans Polymarket active markets and live CLOB orderbooks for volume spikes and smart-money spread divergence, scrapes resolution URLs, and sanitizes resolution text. Price: $0.008 USDC on Base.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "category": {"type": "string", "description": "Category filter (crypto, politics, fed, ai)"},
-                "limit": {"type": "integer", "default": 25, "description": "Max markets to analyze"},
-                "strict_mode": {"type": "boolean", "default": True, "description": "Deterministic prompt-injection sanitization strictness"},
-            },
-        },
-    },
-    {
-        "name": "pre_trade_agent_gate",
-        "description": "Deterministic TRUST/BLOCK pre-trade gate combining on-chain DexScreener liquidity and Base/Solana RPC honeypot inspection with CanaryGuard metadata injection scrubbing. Price: $0.005 USDC on Base.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "token_or_service_address": {"type": "string", "description": "EVM or Solana address"},
-                "chain": {"type": "string", "enum": ["base", "solana"], "default": "base", "description": "Blockchain ecosystem to audit (base or solana)"},
-                "target_url": {"type": "string", "description": "Optional associated project URL"},
-                "strict_mode": {"type": "boolean", "default": True, "description": "Deterministic prompt-injection sanitization strictness"},
-            },
-            "required": ["token_or_service_address"],
-        },
-    },
-    {
-        "name": "health_and_sample",
-        "description": "Free uptime probe and sample payload discovery tool for MCP registries and autonomous routers.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "include_samples": {"type": "boolean", "default": True, "description": "Include sample tool calls and discovery payloads"},
-            },
-        },
-    },
-    {
-        "name": "polymarket_top_whales",
-        "description": "Top 10 Polymarket whale orderbook imbalances and CLOB skew right now, pre-sanitized with CanaryGuard. Price: $0.003 USDC on Base.",
-        "inputSchema": {"type": "object", "properties": {}},
-    },
-    {
-        "name": "polymarket_crypto_odds",
-        "description": "Sanitized BTC/ETH/SOL Polymarket odds, probability spreads, and liquidity depth in basis points. Price: $0.002 USDC on Base.",
-        "inputSchema": {"type": "object", "properties": {}},
-    },
-    {
-        "name": "polymarket_macro_fed",
-        "description": "Federal Reserve interest rate decisions & macro prediction market odds + sanitized resolution criteria. Price: $0.002 USDC on Base.",
-        "inputSchema": {"type": "object", "properties": {}},
-    },
-    {
-        "name": "base_trending_tokens",
-        "description": "Top trending Base DEX pairs (DexScreener) pre-screened for honeypots, malicious taxes, and prompt injections. Price: $0.003 USDC on Base.",
-        "inputSchema": {"type": "object", "properties": {}},
-    },
-    {
-        "name": "base_new_pools",
-        "description": "Newly created Base liquidity pools (last 2 hours) with automated TRUST/BLOCK verdict. Price: $0.003 USDC on Base.",
-        "inputSchema": {"type": "object", "properties": {}},
-    },
-    {
-        "name": "solana_trending_safe",
-        "description": "Top trending Solana tokens screened via DexScreener + CanaryGuard token metadata injection scrubber. Price: $0.003 USDC on Base.",
-        "inputSchema": {"type": "object", "properties": {}},
-    },
-    {
-        "name": "defi_yield_radar",
-        "description": "Live DeFiLlama top stablecoin & ETH APY yields on Base and Arbitrum, pre-sanitized for AI execution. Price: $0.002 USDC on Base.",
-        "inputSchema": {"type": "object", "properties": {}},
-    },
-    {
-        "name": "crypto_sentiment_pulse",
-        "description": "Real-time crypto Fear & Greed index + funding rate skew + injection-free top news headlines. Price: $0.002 USDC on Base.",
-        "inputSchema": {"type": "object", "properties": {}},
-    },
-    {
-        "name": "hackernews_ai_digest",
-        "description": "Top 15 HackerNews AI and autonomous agent stories converted to clean, injection-free LLM Markdown. Price: $0.002 USDC on Base.",
-        "inputSchema": {"type": "object", "properties": {}},
-    },
-    {
-        "name": "github_trending_agents",
-        "description": "Top trending GitHub AI agent & MCP tool repositories today with sanitized descriptions and README summaries. Price: $0.002 USDC on Base.",
-        "inputSchema": {"type": "object", "properties": {}},
-    },
-    {
-        "name": "arxiv_agent_papers",
-        "description": "Latest ArXiv AI agent security and autonomous reasoning papers, sanitized and summarized for context windows. Price: $0.002 USDC on Base.",
-        "inputSchema": {"type": "object", "properties": {}},
-    },
-    {
-        "name": "security_prompt_firewall",
-        "description": "Ultra-fast $0.001 deterministic prompt-injection & wallet-drainer scrubber for raw agent context windows. Price: $0.001 USDC on Base.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {"text": {"type": "string", "description": "Raw text context to scrub"}},
-        },
-    },
-    {
-        "name": "security_url_threat_check",
-        "description": "Instant URL phishing, unicode homograph, redirect loop, and hidden-DOM prompt injection audit. Price: $0.002 USDC on Base.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {"url": {"type": "string", "description": "Destination URL to inspect"}},
-        },
-    },
-    {
-        "name": "security_x402_endpoint_verifier",
-        "description": "Audits any target x402 endpoint's 402 challenge, payTo wallet, amount, and schema for hijack/overcharge risks. Price: $0.002 USDC on Base.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {"endpoint_url": {"type": "string", "description": "x402 URL to audit"}},
-        },
-    },
-    {
-        "name": "security_evm_calldata_firewall",
-        "description": "Decodes and inspects EVM transaction calldata / ABI payloads for unauthorized approvals, permit signatures, or drainer selectors. Price: $0.002 USDC on Base.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {"calldata": {"type": "string", "description": "Hex calldata (0x...)"}},
-        },
-    },
-]
-
 # Output schema for MCP 2024-11-05 & Smithery Quality Score compliance
 DEFAULT_OUTPUT_SCHEMA = {
     "type": "object",
@@ -170,16 +30,134 @@ DEFAULT_OUTPUT_SCHEMA = {
     "required": ["status"],
 }
 
-# Ensure Glama TDQS & Smithery Capability compliance for all tools
-for _tool in MCP_TOOLS:
-    if "annotations" not in _tool:
-        _tool["annotations"] = {
+TOOL_INPUT_SCHEMAS: Dict[str, Dict[str, Any]] = {
+    "stealth_scrape_and_sanitize": {
+        "type": "object",
+        "properties": {
+            "url": {"type": "string", "description": "Target destination URL"},
+            "render_js": {"type": "boolean", "default": False, "description": "Enable stealth headless browser rendering"},
+            "strict_mode": {"type": "boolean", "default": True, "description": "Deterministic sanitization strictness"},
+        },
+        "required": ["url"],
+    },
+    "polymarket_alpha_divergence": {
+        "type": "object",
+        "properties": {
+            "category": {"type": "string", "description": "Category filter (crypto, politics, fed, ai)"},
+            "limit": {"type": "integer", "default": 25, "description": "Max markets to analyze"},
+            "strict_mode": {"type": "boolean", "default": True, "description": "Deterministic prompt-injection sanitization strictness"},
+        },
+    },
+    "pre_trade_agent_gate": {
+        "type": "object",
+        "properties": {
+            "token_or_service_address": {"type": "string", "description": "EVM or Solana address"},
+            "chain": {"type": "string", "enum": ["base", "solana"], "default": "base", "description": "Blockchain ecosystem to audit (base or solana)"},
+            "target_url": {"type": "string", "description": "Optional associated project URL"},
+            "strict_mode": {"type": "boolean", "default": True, "description": "Deterministic prompt-injection sanitization strictness"},
+        },
+        "required": ["token_or_service_address"],
+    },
+    "polymarket_top_whales": {
+        "type": "object",
+        "properties": {
+            "limit": {"type": "integer", "default": 10, "description": "Max whales to analyze"},
+        },
+    },
+    "polymarket_crypto_odds": {
+        "type": "object",
+        "properties": {
+            "asset": {"type": "string", "default": "BTC", "description": "Crypto asset (BTC, ETH, SOL)"},
+        },
+    },
+    "base_trending_tokens": {
+        "type": "object",
+        "properties": {
+            "chain": {"type": "string", "default": "base", "description": "Target blockchain network"},
+        },
+    },
+    "defi_yield_radar": {
+        "type": "object",
+        "properties": {
+            "asset": {"type": "string", "default": "USDC", "description": "Target asset (USDC, ETH)"},
+        },
+    },
+    "hackernews_ai_digest": {
+        "type": "object",
+        "properties": {
+            "limit": {"type": "integer", "default": 10, "description": "Number of stories"},
+        },
+    },
+    "security_prompt_firewall": {
+        "type": "object",
+        "properties": {
+            "text": {"type": "string", "description": "Raw text context to scrub for prompt injections"},
+        },
+        "required": ["text"],
+    },
+    "security_x402_endpoint_verifier": {
+        "type": "object",
+        "properties": {
+            "endpoint_url": {"type": "string", "description": "Target x402 endpoint URL to audit"},
+        },
+        "required": ["endpoint_url"],
+    },
+    "research_deep_web_dossier": {
+        "type": "object",
+        "properties": {
+            "topic": {"type": "string", "description": "Research topic or target entity"},
+            "depth": {"type": "string", "default": "comprehensive", "description": "Research depth"},
+        },
+        "required": ["topic"],
+    },
+    "oracle_perp_funding_and_basis": {
+        "type": "object",
+        "properties": {
+            "assets": {"type": "array", "items": {"type": "string"}, "description": "Assets to analyze (e.g. ['BTC', 'ETH', 'SOL'])"},
+        },
+    },
+    "alpha_polymarket_whale_orderflow": {
+        "type": "object",
+        "properties": {
+            "min_order_usd": {"type": "number", "default": 10000, "description": "Minimum order size in USD"},
+            "include_cross_venue": {"type": "boolean", "default": True, "description": "Include cross-venue arbitrage matrix"},
+        },
+    },
+    "security_attestation_bundle": {
+        "type": "object",
+        "properties": {
+            "prompt_text": {"type": "string", "description": "Prompt text to attest"},
+            "target_url": {"type": "string", "description": "Target URL"},
+            "token_address": {"type": "string", "description": "Token contract address"},
+        },
+        "required": ["prompt_text"],
+    },
+    "research_topic_news_scanner": {
+        "type": "object",
+        "properties": {
+            "query": {"type": "string", "description": "Target search topic or protocol keyword"},
+        },
+        "required": ["query"],
+    },
+}
+
+# Dynamically construct exactly the 15 paid tools from canonical TOOL_PRICING
+MCP_TOOLS: List[Dict[str, Any]] = []
+for tool_name, pricing in TOOL_PRICING.items():
+    if pricing.get("amount_microunits", "0") == "0":
+        continue
+    schema = TOOL_INPUT_SCHEMAS.get(tool_name, {"type": "object", "properties": {}})
+    MCP_TOOLS.append({
+        "name": tool_name,
+        "description": f"{pricing['description']} Price: {pricing['price_formatted']} on Base.",
+        "inputSchema": schema,
+        "annotations": {
             "readOnlyHint": True,
             "destructiveHint": False,
             "openWorldHint": True,
-        }
-    if "outputSchema" not in _tool:
-        _tool["outputSchema"] = DEFAULT_OUTPUT_SCHEMA
+        },
+        "outputSchema": DEFAULT_OUTPUT_SCHEMA,
+    })
 
 def generate_health_and_sample_payload(include_samples: bool = True) -> Dict[str, Any]:
     """Generates the discovery payload for free exploration."""
@@ -203,15 +181,15 @@ def generate_health_and_sample_payload(include_samples: bool = True) -> Dict[str
         samples_data = {
             "stealth_scrape_and_sanitize": {
                 "sample_input": {"url": "https://news.ycombinator.com", "render_js": False},
-                "price": "0.005 USDC",
+                "price": "0.015 USDC",
             },
             "polymarket_alpha_divergence": {
                 "sample_input": {"category": "crypto", "limit": 5},
-                "price": "0.008 USDC",
+                "price": "0.020 USDC",
             },
             "pre_trade_agent_gate": {
                 "sample_input": {"token_or_service_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "chain": "base"},
-                "price": "0.005 USDC",
+                "price": "0.010 USDC",
             },
         }
         payload["samples"] = samples_data

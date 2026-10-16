@@ -727,9 +727,27 @@ async def mcp_post(request: Request):
 
     return JSONResponse(content=response_data, headers=headers)
 
-@app.api_route("/mcp", methods=["GET", "PUT", "DELETE", "PATCH"], include_in_schema=False)
+@app.get("/mcp", include_in_schema=False)
+@app.get("/server-card.json", include_in_schema=False)
+async def mcp_get():
+    public_url = get_public_url()
+    return JSONResponse({
+        "status": "ok",
+        "protocol": "model-context-protocol",
+        "serverInfo": {
+            "name": "stealthguard-402",
+            "version": SERVICE_VERSION,
+        },
+        "description": "Stealth web scraper and prediction-market alpha with prompt-injection sanitization.",
+        "transport": {"type": "streamable-http", "url": f"{public_url}/mcp"},
+        "capabilities": {"tools": {"listChanged": False}},
+        "tools_count": len(MCP_TOOLS),
+        "tools": MCP_TOOLS,
+    })
+
+@app.api_route("/mcp", methods=["PUT", "DELETE", "PATCH"], include_in_schema=False)
 async def mcp_other_methods():
-    raise HTTPException(status_code=405, detail="Method Not Allowed: MCP endpoint requires POST")
+    raise HTTPException(status_code=405, detail="Method Not Allowed: MCP endpoint requires GET or POST")
 
 # ==============================================================================
 # Custom OpenAPI Generator (Guarantees 100% Pass Rate on x402scan / tryponcho)
