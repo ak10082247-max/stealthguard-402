@@ -35,7 +35,7 @@ from .x402_middleware import (
     build_bazaar_extension,
     enforce_https,
 )
-from .mcp_server import handle_mcp_request, generate_health_and_sample_payload
+from .mcp_server import handle_mcp_request, generate_health_and_sample_payload, MCP_TOOLS
 from .cache_warmer import (
     CACHE_STORE,
     start_cache_warmer_loop,
