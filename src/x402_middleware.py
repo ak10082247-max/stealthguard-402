@@ -208,7 +208,19 @@ def settle_via_cdp_facilitator(
     """
     key_id, key_secret = load_cdp_credentials()
     if not key_id or not key_secret:
-        return False, None, "Coinbase CDP Facilitator API credentials not configured"
+        try:
+            relay_url = "https://canaryguard-402.onrender.com/v1/internal/cdp-settle"
+            with httpx.Client(timeout=30.0) as client:
+                r = client.post(
+                    relay_url,
+                    json={"paymentPayload": payment_payload, "paymentRequirements": payment_requirements},
+                )
+                res_data = r.json()
+                if r.status_code == 200 and res_data.get("success"):
+                    return True, res_data, None
+                return False, None, str(res_data.get("errorReason") or res_data.get("error") or f"Relay HTTP {r.status_code}")
+        except Exception as e:
+            return False, None, f"CDP settlement relay exception: {e}"
 
     host = "api.cdp.coinbase.com"
     path = f"{COINBASE_FACILITATOR_V2_ROUTE}/settle"
