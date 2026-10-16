@@ -1,0 +1,19 @@
+# MCPize Configuration
+# Docs: https://mcpize.com/docs/mcpize-yaml
+
+version: 1
+
+name: "StealthGuard-402"
+slug: "stealthguard"
+
+runtime: container
+
+build:
+  dockerfile: "Dockerfile"
+
+start:
+  type: http
+  command: "node dist/index.js"
+
+bridge:
+  mode: http

@@ -24,6 +24,18 @@ For developers, automated agents, and enterprise teams that prefer traditional f
 
 ---
 
+## Connect via MCPize
+
+Use this MCP server instantly with no local installation:
+
+```bash
+npx -y mcpize connect @ak10082247-max/stealthguard --client claude
+```
+
+Or connect at: **https://mcpize.com/mcp/stealthguard**
+
+---
+
 ## 🚀 Dual-Rail Monetization Architecture
 
 ```
@@ -205,4 +217,3 @@ StealthGuard scans live Polymarket prediction markets every 2 hours via automate
 - **Discovery Manifest**: `https://stealthguard-402.onrender.com/.well-known/x402`
 - **Apify Actor**: [kuroxreal/stealthguard-402](https://apify.com/kuroxreal/stealthguard-402)
 - **Base Payout Wallet**: `0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1`
-
