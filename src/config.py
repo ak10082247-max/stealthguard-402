@@ -5,8 +5,14 @@ NETWORK = "eip155:8453"
 CHAIN_ID = 8453
 ASSET = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"  # Base USDC
 DEFAULT_RECIPIENT = "0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1"
+SOLANA_NETWORK = "solana:mainnet"
+SOLANA_USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+DEFAULT_SOLANA_RECIPIENT = "3tQ4GthjUMqNsyrb1rZMocMHoNewFQWjDUvHZqWeYuCN"
 SERVICE_NAME = "StealthGuard-402"
 SERVICE_VERSION = "1.2.0"
+
+def get_solana_recipient_address() -> str:
+    return os.getenv("SOLANA_MERCHANT_ADDRESS") or DEFAULT_SOLANA_RECIPIENT
 
 # 15 Paid Endpoints Matrix (10 Core/Alpha [$0.008 - $0.020 USDC] + 5 High-Ticket Intelligence [$0.02 - $0.25 USDC]) + Free Discovery Probe
 TOOL_PRICING: Dict[str, Dict[str, Any]] = {

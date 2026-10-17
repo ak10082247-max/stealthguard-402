@@ -49,6 +49,9 @@ from .config import (
     TOOL_PRICING,
     get_recipient_address,
     get_public_url,
+    SOLANA_NETWORK,
+    SOLANA_USDC_MINT,
+    get_solana_recipient_address,
 )
 
 logger = logging.getLogger("stealthguard.x402")
@@ -437,7 +440,16 @@ def build_402_challenge(
                 "maxTimeoutSeconds": 300,
                 "payTo": pay_to,
                 "extra": {"name": "USD Coin", "version": "2"},
-            }
+            },
+            {
+                "scheme": "exact",
+                "network": SOLANA_NETWORK,
+                "asset": SOLANA_USDC_MINT,
+                "amount": str(amount_units),
+                "maxTimeoutSeconds": 300,
+                "payTo": get_solana_recipient_address(),
+                "extra": {"name": "USD Coin (Solana)", "version": "2"},
+            },
         ],
         "description": desc,
         "mimeType": "application/json",
