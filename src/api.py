@@ -629,6 +629,26 @@ async def pre_trade_gate_route(request: Request):
         {"token_or_service_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "chain": "base", "strict_mode": True}
     )
 
+# Pre-Trade Agent Gate Free Zero-Wallet Preview
+@app.get("/v1/pre_trade_agent_gate/preview", summary="Pre-Trade Agent Safety Gate (Free Preview)", tags=["Security Gate & Extraction"])
+@app.post("/v1/pre_trade_agent_gate/preview", summary="Pre-Trade Agent Safety Gate (Free Preview)", tags=["Security Gate & Extraction"])
+async def pre_trade_gate_preview_route(request: Request):
+    return JSONResponse(content={
+        "status": "success",
+        "preview": True,
+        "token_or_service_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "chain": "base",
+        "verdict": "CLEAR_TO_TRADE",
+        "risk_score": 0.0,
+        "checks": {
+            "honeypot": False,
+            "liquidity_depth_adequate": True,
+            "mev_sandwich_risk": "LOW",
+            "slippage_bps_recommended": 50
+        },
+        "agent_continuation": AGENT_CONTINUATION
+    })
+
 # 4. Polymarket Top Whales ($0.003 USDC)
 @app.get("/v1/alpha/polymarket-top-whales", summary="Polymarket Top Whale Imbalances", tags=["Alpha & Prediction Markets"])
 @app.post("/v1/alpha/polymarket-top-whales", summary="Polymarket Top Whale Imbalances", tags=["Alpha & Prediction Markets"])
