@@ -27,3 +27,7 @@ scripts/*.json
 
 mcp-publisher.exe
 
+
+node_modules/
+sdk/typescript/node_modules/
+sdk/typescript/dist/
