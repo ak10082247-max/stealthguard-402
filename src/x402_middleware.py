@@ -51,6 +51,8 @@ from .config import (
     get_public_url,
     SOLANA_NETWORK,
     SOLANA_USDC_MINT,
+    SOLANA_FEE_PAYER,
+    PAYAI_FACILITATOR_URL,
     get_solana_recipient_address,
 )
 
@@ -448,7 +450,7 @@ def build_402_challenge(
                 "amount": str(amount_units),
                 "maxTimeoutSeconds": 300,
                 "payTo": get_solana_recipient_address(),
-                "extra": {"name": "USD Coin (Solana)", "version": "2"},
+                "extra": {"name": "USD Coin (Solana)", "version": "2", "feePayer": SOLANA_FEE_PAYER},
             },
         ],
         "description": desc,
@@ -514,7 +516,7 @@ def verify_x402_payment(
     resource_url: Optional[str] = None,
 ) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str], int]:
     """
-    Verifies an incoming payment authorization against Base USDC terms.
+    Verifies an incoming payment authorization against Base USDC or Solana USDC terms.
     Returns: (is_valid, payment_info_or_response, error_message, status_code)
     """
     if not raw_header:
@@ -544,6 +546,54 @@ def verify_x402_payment(
         parsed = json.loads(payload_str)
     except Exception as e:
         return False, None, f"Malformed JSON in payment header: {e}", 400
+
+    # Branch 1: Solana Mainnet x402 Settlement via PayAI Facilitator
+    incoming_net = str((parsed.get("accepted") or {}).get("network") or parsed.get("network") or "")
+    tx_b64 = str((parsed.get("payload") or {}).get("transaction") or parsed.get("transaction") or "")
+    if incoming_net.startswith("solana") or tx_b64:
+        if not tx_b64:
+            return False, None, "Missing Solana serialized transaction in payload.transaction", 402
+        sol_hash = hashlib.sha256(tx_b64.encode("utf-8")).hexdigest()
+        if sol_hash in REPLAY_CACHE:
+            return False, None, "Solana payment transaction already consumed.", 409
+
+        solana_req = {
+            "scheme": "exact",
+            "network": SOLANA_NETWORK,
+            "amount": str(required_units),
+            "asset": SOLANA_USDC_MINT,
+            "payTo": get_solana_recipient_address(),
+            "maxTimeoutSeconds": 300,
+            "extra": {"name": "USD Coin (Solana)", "version": "2", "feePayer": SOLANA_FEE_PAYER},
+        }
+        payai_body = {
+            "x402Version": 2,
+            "paymentPayload": {
+                "x402Version": 2,
+                "resource": {"url": res_url, "description": desc, "mimeType": "application/json"},
+                "extensions": parsed.get("extensions") or discovery,
+                "accepted": solana_req,
+                "payload": parsed.get("payload") or {"transaction": tx_b64},
+            },
+            "paymentRequirements": solana_req,
+        }
+        try:
+            with httpx.Client(timeout=30.0) as client:
+                r = client.post(f"{PAYAI_FACILITATOR_URL}/settle", json=payai_body)
+                data = r.json() if r.content else {}
+                if r.status_code == 200 and data.get("success"):
+                    REPLAY_CACHE[sol_hash] = time.time() + 86400
+                    return True, {
+                        "payer": data.get("payer") or (parsed.get("payload") or {}).get("payer") or "solana-payer",
+                        "amount": str(required_units),
+                        "transaction": data.get("transaction") or sol_hash,
+                        "network": SOLANA_NETWORK,
+                        "resource": res_url,
+                    }, None, 200
+                err_reason = data.get("errorReason") or data.get("error") or f"PayAI HTTP {r.status_code}"
+                return False, None, f"Solana PayAI settlement rejected: {err_reason}", 402
+        except Exception as sol_exc:
+            return False, None, f"PayAI facilitator exception: {sol_exc}", 402
 
     # Extract auth and signature fields
     auth = (
