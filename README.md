@@ -5,6 +5,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org)
 [![Base Mainnet](https://img.shields.io/badge/Base-Mainnet_8453-0052FF.svg?logo=coinbase&logoColor=white)](https://basescan.org)
 [![Solana Mainnet](https://img.shields.io/badge/Solana-Mainnet-14F195.svg?logo=solana&logoColor=black)](https://solscan.io)
+[![Glama](https://glama.ai/mcp/servers/ak10082247-max/stealthguard-402/badges/score.svg)](https://glama.ai/mcp/servers/ak10082247-max/stealthguard-402)
 
 This repository contains the complete **open-source Model Context Protocol (MCP) server implementation** of **StealthGuard 402**. It equips LLM agents (Claude Desktop, Cursor, Windsurf, LangChain) with tools for Cloudflare-bypassing web scraping, prompt injection firewall sanitization, Polymarket whale orderbook divergence, and cross-chain pre-trade agent gating.
 
