@@ -5,12 +5,36 @@ from bs4 import BeautifulSoup, Comment
 
 # Characters that can conceal commands (zero-width, bidi formatting, soft hyphens)
 INVISIBLE_CHARACTERS = re.compile(r'[\u00ad\u180e\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff]')
-ROLE_DELIMITER = re.compile(r'\[/?INST\]|<\|(?:im_start|im_end|system|developer|assistant|user)\|>|<<\/?SYS>>', re.IGNORECASE)
-ROLE_PREFIX = re.compile(r'(?:^|[\r\n])\s*(?:system|developer|assistant)\s*:', re.IGNORECASE)
+ROLE_DELIMITER = re.compile(r'\[/?INST\]|<\|(?:im_start|im_end|system|developer|assistant|user)\|>|<<\/?SYS>>|【\/?(?:システム|指示|命令|プロンプト|役割|開発者|System|Developer|Assistant|User|Instruction|系统|系統|指令|提示|规则|規則|시스템|지침|명령)】|\[\/?(?:システム|指示|命令|プロンプト|役割|開発者|系统|系統|指令|提示|规则|規則|시스템|지침|명령)\]', re.IGNORECASE)
+ROLE_PREFIX = re.compile(r'(?:^|[\r\n])\s*(?:system|developer|assistant|admin|root|superuser|operator|jailbreak|DAN|instruction|prompt|システム|開発者|指示|系统|系統|指令|시스템|지침)\s*[:：]', re.IGNORECASE)
 INSTRUCTION_OVERRIDE = re.compile(
     r'\b(?:(?:ignore|disregard|forget|override)\s+(?:(?:all|any|the|your|our)\s+)*(?:previous|prior|earlier|above|system|developer)\s+(?:instructions?|prompts?|rules?|messages?)|'
     r'(?:you\s+(?:are\s+to|must|will)\s+)?(?:do\s+(?:what|as)\s+i\s+(?:say|tell\s+you)|obey(?:\s+(?:all|only|my)\s+(?:commands?|instructions?))?)|'
     r'follow\s+only\s+(?:my|these)\s+instructions?)\b',
+    re.IGNORECASE
+)
+MULTILINGUAL_OVERRIDE = re.compile(
+    r'(?:\b(?:(?:ignora|olvida|anula|descarta)\s+(?:todas?\s+las?\s+)?(?:instrucciones|reglas|directrices)|'
+    r'(?:ignorez?|oubli(?:ez|er)|annulez?)\s+(?:toutes?\s+les?\s+)?(?:instructions?|règles?|directives?)|'
+    r'(?:ignoriere?|vergiss|übergehe)\s+(?:alle\s+)?(?:vorherigen?\s+)?(?:anweisungen?|regeln?)|'
+    r'(?:игнорируй|забудь|отмени)\s+(?:все\s+)?(?:предыдущие\s+)?(?:инструкции|правила)|'
+    r'(?:ignora|dimentica|annulla)\s+(?:tutte\s+le\s+)?(?:istruzioni|regole)|'
+    r'(?:ignore|esqueça|anule)\s+(?:todas\s+as\s+)?(?:instruções|regras))\b|'
+    r'(?:(?:最優先|新しい|新規|追加|今後|これより|これから)(?:の)?(?:指示|プロンプト|命令|ルール|方針|役割))|'
+    r'(?:(?:要約|ルール|指示|制約|ガードレール|設定|方針|制約事項)(?:は|を)?(?:不要|無視|破棄|無効|忘れて|キャンセル|取り消し))|'
+    r'(?:(?:以前|前|過去|これまで)(?:の)?(?:指示|プロンプト|命令|ルール|制約)(?:を|は)?(?:無視|破棄|忘れ|無効|取り消し))|'
+    r'(?:(?:指示|プロンプト|ルール|制約)(?:を|は)?(?:すべて)?(?:無視|破棄|忘れ|リセット))|'
+    r'(?:(?:返信|出力|応答|回答)(?:は|として)?(?:\s*[\w\-_]+\s*)?(?:の)?(?:一語|単語|言葉)?(?:のみ|だけ)(?:とし|で|を出力|を返答|と答えて)?)|'
+    r'(?:それ以外は(?:一切)?(?:書かない|出力しない|応答しない|記述しない))|'
+    r'(?:(?:忽略|无视|無視|丢弃|丟棄|放弃|放棄|取消|覆盖|覆蓋|忘记|忘記|清空|重置)(?:之前|所有|全部|原先|上方|前述)?(?:的)?(?:指令|提示|规则|規則|指示|系统提示|系統提示|约束|約束))|'
+    r'(?:(?:这是|作為|作为)?(?:新的)?(?:最高优先级|最高優先級|优先|優先)(?:的)?(?:指令|指示|规则|規則))|'
+    r'(?:(?:不要|切勿|无需|無須)(?:总结|要约|摘要|遵守))|'
+    r'(?:(?:只|仅|僅|唯一)(?:回复|回覆|输出|輸出|返回)(?:\s*[\w\-_]+\s*)?(?:，|。|并|並)?(?:不要|切勿)(?:输出|輸出|写|寫|回复|回覆)(?:其他|任何))|'
+    r'(?:从现在开始|從現在開始)|'
+    r'(?:(?:이전|모든|기존|앞의)?\s*(?:지시|지침|규칙|프롬프트|설정|명령)(?:를|을)?\s*(?:무시|취소|삭제|잊어|초기화))|'
+    r'(?:(?:새로운|최우선)\s*(?:지침|지시|명령|규칙))|'
+    r'(?:(?:오직|단지)\s*[\w\-_]+\s*(?:만|으로)\s*(?:답변|출력|응답))|'
+    r'(?:그\s*외에는\s*(?:아무것도|일체)?\s*(?:쓰지|출력하지|작성하지)\s*(?:마|말아)))',
     re.IGNORECASE
 )
 WALLET_ASSET_COMMAND = re.compile(
@@ -36,6 +60,8 @@ def detect_command_threats(val: str) -> List[str]:
         threats.append('role_delimiter_override')
     if INSTRUCTION_OVERRIDE.search(norm):
         threats.append('instruction_override')
+    if MULTILINGUAL_OVERRIDE.search(norm):
+        threats.append('multilingual_instruction_override')
     if matches_wallet_command(norm):
         threats.append('wallet_transfer_command')
     return threats
@@ -122,7 +148,7 @@ def tidy_text(val: str) -> str:
 def scrub_command_lines(val: str) -> str:
     blocked_marker = '[CANARY_REMOVED_INSTRUCTION]'
     marked = unicodedata.normalize('NFKC', val)
-    patterns = [ROLE_DELIMITER, ROLE_PREFIX, INSTRUCTION_OVERRIDE, WALLET_ASSET_COMMAND, WALLET_DESTINATION_COMMAND]
+    patterns = [ROLE_DELIMITER, ROLE_PREFIX, INSTRUCTION_OVERRIDE, MULTILINGUAL_OVERRIDE, WALLET_ASSET_COMMAND, WALLET_DESTINATION_COMMAND]
     for pattern in patterns:
         marked = pattern.sub(lambda m: '\n'.join([blocked_marker] * len(m.group(0).split('\n'))), marked)
     lines = [line for line in marked.split('\n') if blocked_marker not in line]
@@ -198,7 +224,7 @@ def sanitize_content(content: str, strict_mode: bool = True) -> Dict[str, Any]:
         risk_score = max(risk_score, 0.4)
     if 'role_delimiter_override' in detected_commands:
         risk_score = max(risk_score, 0.85)
-    if 'instruction_override' in detected_commands:
+    if 'instruction_override' in detected_commands or 'multilingual_instruction_override' in detected_commands:
         risk_score = max(risk_score, 0.95)
     if 'wallet_transfer_command' in detected_commands:
         risk_score = max(risk_score, 0.98)
