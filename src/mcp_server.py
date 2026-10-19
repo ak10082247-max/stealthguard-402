@@ -204,9 +204,31 @@ async def handle_mcp_request(
     Handles MCP JSON-RPC 2.0 requests over Streamable HTTP transport.
     Returns: (response_dict, optional_payment_response_header)
     """
-    req_id = request_data.get("id")
+    req_id = request_data.get("id") or 1
     method = request_data.get("method")
     params = request_data.get("params") or {}
+
+    # 0. Empty probe / missing method: return server capabilities and tools list
+    if not method:
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {
+                    "tools": {"listChanged": False},
+                    "resources": {"subscribe": False, "listChanged": False},
+                    "prompts": {"listChanged": False},
+                },
+                "serverInfo": {
+                    "name": "stealthguard-402",
+                    "displayName": "StealthGuard-402",
+                    "title": "StealthGuard 402",
+                    "version": SERVICE_VERSION,
+                },
+                "tools": MCP_TOOLS,
+            },
+        }, None
 
     # 1. Initialize
     if method == "initialize":
