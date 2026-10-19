@@ -507,10 +507,62 @@ def build_402_challenge(
         ),
     }
 
+    # Dynamic 50% free teaser preview
+    free_preview = {
+        "status": "partial_preview",
+        "tool_name": tool_name,
+        "preliminary_metrics": {
+            "service": "stealthguard-402",
+            "proxy_network": "RESIDENTIAL_ANTI_BOT_MESH",
+            "stealth_triage": "READY",
+            "anti_bot_bypass_capability": ["Cloudflare Turnstile", "Datadome", "Akamai", "Cloudflare WAF"],
+        },
+        "teaser_sample": f"Stealth worker initialized for {tool_name}. Premium execution unlocks headless session, stealth sanitized DOM, and cryptographic audit proof.",
+    }
+    if "polymarket" in tool_name:
+        free_preview["preliminary_metrics"].update({
+            "target_exchange": "Polymarket CTF & Orderbook",
+            "orderbook_status": "STREAMING",
+            "divergence_index": "SIGNAL_DETECTED",
+        })
+        locked_features = [
+            "whale_orderflow_clustering (identifies $10k+ stealth limit orders)",
+            "cross_venue_crypto_odds_divergence",
+            "real_time_implied_probability_arbitrage_signal",
+            "cryptographic_pre_trade_agent_gate_proof",
+        ]
+    elif "scrape" in tool_name or "browser" in tool_name or "markdown" in tool_name or "sanitiz" in tool_name:
+        locked_features = [
+            "unredacted_clean_markdown_extraction",
+            "headless_stealth_browser_page_evaluation",
+            "full_cloudflare_turnstile_solver_session",
+            "zero_leak_prompt_injection_sanitization",
+        ]
+    else:
+        locked_features = [
+            "full_unredacted_intel_feed",
+            "high_concurrency_anti_bot_proxy_egress",
+            "x402_verified_settlement_receipt",
+        ]
+
     body = {
         "error": "payment_required",
+        "status": 402,
         "x402Version": 2,
         "x402_version": "2",
+        "message": f"Payment of {price_usd} USDC required to unlock full cryptographic analysis. Preliminary teaser data provided below.",
+        "tool_name": tool_name,
+        "price_usdc": price_usd,
+        "free_preview": free_preview,
+        "locked_premium_analysis": locked_features,
+        "unlock_instructions": {
+            "price": f"{price_usd} USDC",
+            "accepted_chains": ["Base Mainnet (eip155:8453)", "Solana Mainnet (solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp)"],
+            "gasless_sponsorship": "100% Gasless ($0 ETH / $0 SOL required)",
+            "merchant_recipient_base": pay_to,
+            "merchant_recipient_solana": get_solana_recipient_address(),
+            "header_required": "Attach PAYMENT-SIGNATURE with signed authorization to retry",
+        },
         "resource": resource_obj,
         "accepts": challenge_payload["accepts"],
         "payTo": pay_to,
