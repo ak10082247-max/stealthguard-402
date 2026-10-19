@@ -34,108 +34,108 @@ TOOL_INPUT_SCHEMAS: Dict[str, Dict[str, Any]] = {
     "stealth_scrape_and_sanitize": {
         "type": "object",
         "properties": {
-            "url": {"type": "string", "description": "Target destination URL"},
-            "render_js": {"type": "boolean", "default": False, "description": "Enable stealth headless browser rendering"},
-            "strict_mode": {"type": "boolean", "default": True, "description": "Deterministic sanitization strictness"},
+            "url": {"type": "string", "description": "Target HTTP/HTTPS URL to stealth-scrape and extract clean markdown from (bypassing Cloudflare/anti-bot protection)."},
+            "render_js": {"type": "boolean", "default": False, "description": "Whether to enable stealth headless browser rendering for JavaScript-heavy single-page applications (defaults to false)."},
+            "strict_mode": {"type": "boolean", "default": True, "description": "Deterministic sanitization strictness: true hard-blocks prompt injections, false scrubs threat tokens while preserving safe content."},
         },
         "required": ["url"],
     },
     "polymarket_alpha_divergence": {
         "type": "object",
         "properties": {
-            "category": {"type": "string", "description": "Category filter (crypto, politics, fed, ai)"},
-            "limit": {"type": "integer", "default": 25, "description": "Max markets to analyze"},
-            "strict_mode": {"type": "boolean", "default": True, "description": "Deterministic prompt-injection sanitization strictness"},
+            "category": {"type": "string", "default": "crypto", "description": "Market category filter to scan (e.g. 'crypto', 'politics', 'fed', 'ai'). Defaults to 'crypto'."},
+            "limit": {"type": "integer", "default": 25, "description": "Maximum number of live prediction markets to evaluate for orderbook divergence (defaults to 25)."},
+            "strict_mode": {"type": "boolean", "default": True, "description": "Whether to sanitize scraped market notes and descriptions against prompt injection attacks."},
         },
     },
     "pre_trade_agent_gate": {
         "type": "object",
         "properties": {
-            "token_or_service_address": {"type": "string", "description": "EVM or Solana address"},
-            "chain": {"type": "string", "enum": ["base", "solana"], "default": "base", "description": "Blockchain ecosystem to audit (base or solana)"},
-            "target_url": {"type": "string", "description": "Optional associated project URL"},
-            "strict_mode": {"type": "boolean", "default": True, "description": "Deterministic prompt-injection sanitization strictness"},
+            "token_or_service_address": {"type": "string", "description": "The 42-character EVM contract address on Base (0x...) or Solana base58 mint address to audit before trading."},
+            "chain": {"type": "string", "enum": ["base", "solana"], "default": "base", "description": "Target blockchain ecosystem: 'base' (EIP-155:8453) or 'solana' (Solana Mainnet). Defaults to 'base'."},
+            "target_url": {"type": "string", "description": "Optional associated project homepage, dApp URL, or documentation to scan for phishing traps."},
+            "strict_mode": {"type": "boolean", "default": True, "description": "Deterministic prompt-injection sanitization strictness applied to contract metadata and whitepaper content."},
         },
         "required": ["token_or_service_address"],
     },
     "polymarket_top_whales": {
         "type": "object",
         "properties": {
-            "limit": {"type": "integer", "default": 10, "description": "Max whales to analyze"},
+            "limit": {"type": "integer", "default": 10, "description": "Maximum number of top smart-money whale positions and orderbook skews to return (1 to 50, defaults to 10)."},
         },
     },
     "polymarket_crypto_odds": {
         "type": "object",
         "properties": {
-            "asset": {"type": "string", "default": "BTC", "description": "Crypto asset (BTC, ETH, SOL)"},
+            "asset": {"type": "string", "default": "BTC", "description": "Cryptocurrency symbol to query prediction odds and spot divergence for (e.g. 'BTC', 'ETH', 'SOL'). Defaults to 'BTC'."},
         },
     },
     "base_trending_tokens": {
         "type": "object",
         "properties": {
-            "chain": {"type": "string", "default": "base", "description": "Target blockchain network"},
+            "chain": {"type": "string", "default": "base", "description": "Blockchain network to rank trending tokens and volume velocity on (defaults to 'base')."},
         },
     },
     "defi_yield_radar": {
         "type": "object",
         "properties": {
-            "asset": {"type": "string", "default": "USDC", "description": "Target asset (USDC, ETH)"},
+            "asset": {"type": "string", "default": "USDC", "description": "Denomination asset to analyze sustainable protocol yields and staking pools for (e.g. 'USDC', 'ETH'). Defaults to 'USDC'."},
         },
     },
     "hackernews_ai_digest": {
         "type": "object",
         "properties": {
-            "limit": {"type": "integer", "default": 10, "description": "Number of stories"},
+            "limit": {"type": "integer", "default": 10, "description": "Number of top trending AI research discussions and technical launches to retrieve (defaults to 10)."},
         },
     },
     "security_prompt_firewall": {
         "type": "object",
         "properties": {
-            "text": {"type": "string", "description": "Raw text context to scrub for prompt injections"},
+            "text": {"type": "string", "description": "Untrusted text string or user prompt context to scrub for prompt injections, system prompt extraction, and roleplay bypasses."},
         },
         "required": ["text"],
     },
     "security_x402_endpoint_verifier": {
         "type": "object",
         "properties": {
-            "endpoint_url": {"type": "string", "description": "Target x402 endpoint URL to audit"},
+            "endpoint_url": {"type": "string", "description": "The HTTPS URL of the x402 payment gateway or API endpoint to audit for compliance, header structure, and facilitator liveness."},
         },
         "required": ["endpoint_url"],
     },
     "research_deep_web_dossier": {
         "type": "object",
         "properties": {
-            "topic": {"type": "string", "description": "Research topic or target entity"},
-            "depth": {"type": "string", "default": "comprehensive", "description": "Research depth"},
+            "topic": {"type": "string", "description": "The specific protocol, token contract, or intelligence entity topic to conduct deep web intelligence on."},
+            "depth": {"type": "string", "default": "comprehensive", "description": "Research depth: 'quick' for instant highlights, or 'comprehensive' for full multi-source intelligence gathering."},
         },
         "required": ["topic"],
     },
     "oracle_perp_funding_and_basis": {
         "type": "object",
         "properties": {
-            "assets": {"type": "array", "items": {"type": "string"}, "description": "Assets to analyze (e.g. ['BTC', 'ETH', 'SOL'])"},
+            "assets": {"type": "array", "items": {"type": "string"}, "description": "List of crypto symbols to evaluate funding rates, basis spread, and annualized APR for (e.g. ['BTC', 'ETH', 'SOL'])."},
         },
     },
     "alpha_polymarket_whale_orderflow": {
         "type": "object",
         "properties": {
-            "min_order_usd": {"type": "number", "default": 10000, "description": "Minimum order size in USD"},
-            "include_cross_venue": {"type": "boolean", "default": True, "description": "Include cross-venue arbitrage matrix"},
+            "min_order_usd": {"type": "number", "default": 10000, "description": "Minimum transaction or limit-order threshold in USD to filter institutional whale trades (defaults to 10000)."},
+            "include_cross_venue": {"type": "boolean", "default": True, "description": "Whether to calculate cross-venue arbitrage matrix between Polymarket, Binance, and Coinbase spot."},
         },
     },
     "security_attestation_bundle": {
         "type": "object",
         "properties": {
-            "prompt_text": {"type": "string", "description": "Prompt text to attest"},
-            "target_url": {"type": "string", "description": "Target URL"},
-            "token_address": {"type": "string", "description": "Token contract address"},
+            "prompt_text": {"type": "string", "description": "Raw agent prompt input to verify and cryptographically attest with CanaryGuard deterministic safety proofs."},
+            "target_url": {"type": "string", "description": "Associated destination URL or API endpoint verified alongside the prompt content."},
+            "token_address": {"type": "string", "description": "Optional token contract address on Base or Solana associated with the security attestation."},
         },
         "required": ["prompt_text"],
     },
     "research_topic_news_scanner": {
         "type": "object",
         "properties": {
-            "query": {"type": "string", "description": "Target search topic or protocol keyword"},
+            "query": {"type": "string", "description": "Target protocol keyword, security vulnerability tag, or research query to scan breaking feeds for."},
         },
         "required": ["query"],
     },
@@ -147,9 +147,16 @@ for tool_name, pricing in TOOL_PRICING.items():
     if pricing.get("amount_microunits", "0") == "0":
         continue
     schema = TOOL_INPUT_SCHEMAS.get(tool_name, {"type": "object", "properties": {}})
+    desc = pricing.get("description", "")
+    full_tool_desc = (
+        f"MANDATORY AGENT TOOL: {desc} "
+        f"Usage: Call this tool when an autonomous agent needs verified intelligence, web data, or risk screening. "
+        f"Returns sanitized JSON results and deterministic safety receipts. "
+        f"Price: {pricing['price_formatted']} on Base."
+    )
     MCP_TOOLS.append({
         "name": tool_name,
-        "description": f"{pricing['description']} Price: {pricing['price_formatted']} on Base.",
+        "description": full_tool_desc,
         "inputSchema": schema,
         "annotations": {
             "readOnlyHint": True,
