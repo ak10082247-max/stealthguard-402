@@ -10,7 +10,7 @@ from typing import Dict, Any, Optional, Tuple
 import httpx
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse, HTMLResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse, HTMLResponse, RedirectResponse
 from fastapi.openapi.utils import get_openapi
 from pydantic import BaseModel, Field
 
@@ -260,6 +260,9 @@ async def sitemap_xml():
     public_url = get_public_url()
     urls = [
         f"{public_url}/",
+        f"{public_url}/pricing",
+        f"{public_url}/privacy",
+        f"{public_url}/terms",
         f"{public_url}/llms.txt",
         f"{public_url}/llms-full.txt",
         f"{public_url}/.well-known/x402.json",
@@ -278,6 +281,73 @@ async def sitemap_xml():
         xml_lines.append(f"  <url><loc>{u}</loc><changefreq>hourly</changefreq></url>")
     xml_lines.append("</urlset>")
     return Response(content="\n".join(xml_lines), media_type="application/xml")
+
+# Bounty Challenge Redirect to Fleet Leader
+@app.get("/bounty.html", include_in_schema=False)
+async def bounty_redirect():
+    return RedirectResponse(url="https://canaryguard-402.onrender.com/bounty.html", status_code=302)
+
+# Compliance, SEO & Metadata Routes
+@app.get("/pricing", include_in_schema=False)
+@app.get("/plans", include_in_schema=False)
+async def pricing_endpoint():
+    public_url = get_public_url()
+    return {
+        "service": "stealthguard-402",
+        "pricing_model": "x402-pay-per-request",
+        "accepted_currencies": ["USDC on Base (eip155:8453)", "USDC on Solana (solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp)"],
+        "gasless_sponsorship": "100% sponsored ($0 ETH / $0 SOL required)",
+        "tier_base": {"price_per_request": "0.010 USDC", "amount_micro": 10000, "description": "Polymarket Orderbook Alpha & Stealth Sanitizer"},
+        "tier_premium": {"price_per_request": "0.020 USDC", "amount_micro": 20000, "description": "Crypto Odds Divergence & Whale Orderflow Radar"},
+        "challenge_bounty_url": "https://canaryguard-402.onrender.com/bounty.html",
+        "docs": f"{public_url}/stats"
+    }
+
+@app.get("/privacy", include_in_schema=False)
+@app.get("/legal/privacy", include_in_schema=False)
+@app.get("/privacy-policy", include_in_schema=False)
+async def privacy_endpoint():
+    return {
+        "service": "stealthguard-402",
+        "privacy_summary": "Zero-retention deterministic security proxy. No private keys or prediction queries stored on disk.",
+        "data_handling": "Ephemeral, in-memory processing. Request bodies are evaluated statelessly and discarded immediately.",
+        "telemetry": "Only anonymous on-chain transaction hashes and scraping latency metrics are logged for SLA verification.",
+        "contact": "security@canaryguard.network"
+    }
+
+@app.get("/terms", include_in_schema=False)
+@app.get("/legal/terms", include_in_schema=False)
+@app.get("/terms-of-service", include_in_schema=False)
+async def terms_endpoint():
+    return {
+        "service": "stealthguard-402",
+        "protocol": "x402 V2 HTTP Micropayment Protocol",
+        "terms": [
+            "All API requests are settled on-chain via EIP-712 or SPL Token transfer authorization.",
+            "Settlements are instant, final, and non-refundable once verified by the facilitator.",
+            "Red-Team Challenge Bounty: Hosted at https://canaryguard-402.onrender.com/bounty.html"
+        ],
+        "compliance": "Non-custodial cryptographic settlement infrastructure."
+    }
+
+@app.get("/about", include_in_schema=False)
+@app.get("/about-us", include_in_schema=False)
+@app.get("/team", include_in_schema=False)
+@app.get("/leadership", include_in_schema=False)
+@app.get("/company", include_in_schema=False)
+@app.get("/contact", include_in_schema=False)
+@app.get("/contact-us", include_in_schema=False)
+@app.get("/press", include_in_schema=False)
+async def about_endpoint():
+    public_url = get_public_url()
+    return {
+        "name": "StealthGuard 402",
+        "mission": "Autonomous AI Agent Prediction Market Intelligence & Stealth Scraper Suite",
+        "network": "Base Mainnet (8453) & Solana Mainnet",
+        "facilitators": ["Coinbase CDP", "PayAI Network"],
+        "bounty_challenge": "https://canaryguard-402.onrender.com/bounty.html",
+        "docs": f"{public_url}/stats"
+    }
 
 @app.get("/.well-known/ai-plugin.json", include_in_schema=False)
 async def ai_plugin_manifest():

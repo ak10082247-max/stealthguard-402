@@ -26,6 +26,7 @@ scripts/fetch_pr_*
 scripts/*.json
 
 mcp-publisher.exe
+deliveries.jsonl
 
 
 node_modules/

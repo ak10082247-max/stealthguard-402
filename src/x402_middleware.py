@@ -290,7 +290,7 @@ def settle_via_cdp_facilitator(
 
 def build_bazaar_extension(
     tool_name: str,
-    description: str,
+    description: str = "",
     mode: str = "http",
     input_schema: Optional[Dict[str, Any]] = None,
     example_input: Optional[Dict[str, Any]] = None,
@@ -300,7 +300,16 @@ def build_bazaar_extension(
     so x402 facilitators, Coinbase Bazaar, and vet402.com L1/L2 output verifiers pass 100%.
     """
     pricing = TOOL_PRICING.get(tool_name, {})
+    desc = description or pricing.get("description", "")
     default_example_in = example_input if example_input is not None else pricing.get("example_input", {})
+    default_input_schema = input_schema or pricing.get("input_schema") or {"type": "object", "properties": {}}
+    default_example_out = pricing.get("example_output", {
+        "status": "success",
+        "tool": tool_name,
+        "agent_continuation": {
+            "chain_execution": "autonomous_agent_flow_v2",
+        },
+    })
 
     if mode == "mcp":
         return {
@@ -311,8 +320,12 @@ def build_bazaar_extension(
                         "toolName": tool_name,
                         "description": description,
                         "transport": "streamable-http",
-                        "inputSchema": input_schema or {"type": "object", "properties": {}},
-                    }
+                        "inputSchema": default_input_schema,
+                    },
+                    "output": {
+                        "type": "json",
+                        "example": default_example_out,
+                    },
                 },
                 "schema": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -329,7 +342,22 @@ def build_bazaar_extension(
                             },
                             "required": ["type", "toolName", "inputSchema"],
                             "additionalProperties": False,
-                        }
+                        },
+                        "output": {
+                            "type": "object",
+                            "properties": {
+                                "type": {"type": "string"},
+                                "example": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {"type": "string"},
+                                    },
+                                    "required": ["status"],
+                                    "additionalProperties": True,
+                                },
+                            },
+                            "required": ["type"],
+                        },
                     },
                     "required": ["input"],
                 },
@@ -348,13 +376,7 @@ def build_bazaar_extension(
                 },
                 "output": {
                     "type": "json",
-                    "example": {
-                        "status": "success",
-                        "tool": tool_name,
-                        "agent_continuation": {
-                            "chain_execution": "autonomous_agent_flow_v2",
-                        },
-                    },
+                    "example": default_example_out,
                 },
             },
             "schema": {
@@ -367,7 +389,7 @@ def build_bazaar_extension(
                             "type": {"type": "string", "const": "http"},
                             "method": {"type": "string", "enum": ["POST", "PUT", "PATCH", "GET"]},
                             "bodyType": {"type": "string", "enum": ["json", "form-data", "text"]},
-                            "body": input_schema or {"type": "object", "properties": {}},
+                            "body": default_input_schema,
                         },
                         "required": ["type", "method", "bodyType", "body"],
                         "additionalProperties": False,
@@ -380,10 +402,8 @@ def build_bazaar_extension(
                                 "type": "object",
                                 "properties": {
                                     "status": {"type": "string"},
-                                    "tool": {"type": "string"},
-                                    "agent_continuation": {"type": "object"},
                                 },
-                                "required": ["status", "tool"],
+                                "required": ["status"],
                                 "additionalProperties": True,
                             },
                         },
