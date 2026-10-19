@@ -622,8 +622,13 @@ async def agent_card():
     }
 
 @app.get("/.well-known/mcp/server-card.json", include_in_schema=False)
+@app.get("/.well-known/mcp/server-cards.json", include_in_schema=False)
 @app.get("/.well-known/mcp.json", include_in_schema=False)
+@app.get("/.well-known/mcp", include_in_schema=False)
+@app.get("/.well-known/mcp-server-card", include_in_schema=False)
+@app.get("/.well-known/mcp-server-card.json", include_in_schema=False)
 @app.get("/.well-known/server-card.json", include_in_schema=False)
+@app.get("/.well-known/ai-catalog.json", include_in_schema=False)
 async def mcp_server_card():
     public_url = get_public_url()
     return {
