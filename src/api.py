@@ -210,6 +210,14 @@ async def stats():
             "identity_registry": "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
             "reputation_registry": "0x8004BAa17C55a88189AE136b182e5fdA19dE9b63",
             "agent_card": f"{get_public_url()}/.well-known/agent-card.json",
+            "agent_registration": f"{get_public_url()}/.well-known/agent-registration.json",
+            "agentId": 335687,
+            "registrations": [
+                {
+                    "agentId": 335687,
+                    "agentRegistry": "eip155:8453:0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
+                }
+            ],
         },
     }
 
@@ -581,6 +589,9 @@ async def live_alerts_feed():
         ],
     }
 
+@app.get("/.well-known/agent-registration.json", include_in_schema=False)
+@app.get("/.well-known/agent.json", include_in_schema=False)
+@app.get("/.well-known/erc8004.json", include_in_schema=False)
 @app.get("/.well-known/agent-card.json", include_in_schema=False)
 @app.get("/agent-metadata.json", include_in_schema=False)
 async def agent_card():
@@ -606,6 +617,13 @@ async def agent_card():
             "identity": "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
             "reputation": "0x8004BAa17C55a88189AE136b182e5fdA19dE9b63",
         },
+        "registrations": [
+            {
+                "agentId": 335687,
+                "agentRegistry": "eip155:8453:0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
+            }
+        ],
+        "supportedTrust": ["reputation"],
         "capabilities": [
             "stealth_web_scraping",
             "polymarket_orderbook_alpha",
