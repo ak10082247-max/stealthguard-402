@@ -128,6 +128,11 @@ async def x402_pre_routing_interceptor(request: Request, call_next):
 
     path = request.url.path
     if path in PAID_PATH_TO_TOOL:
+        # RapidAPI Marketplace Proxy Bypass: Subscriber is billed directly by RapidAPI via credit card
+        if request.headers.get("x-rapidapi-proxy-secret") or request.headers.get("x-rapidapi-key") or request.headers.get("x-rapidapi-user"):
+            request.state.is_rapidapi = True
+            return await call_next(request)
+
         payment_header = request.headers.get("PAYMENT-SIGNATURE") or request.headers.get("X-PAYMENT")
         if not payment_header:
             forwarded = request.headers.get("x-forwarded-for")
@@ -757,7 +762,19 @@ async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict
     payment_header = request.headers.get("PAYMENT-SIGNATURE") or request.headers.get("X-PAYMENT")
     res_url = enforce_https(str(request.url).split("?")[0])
 
-    if getattr(request.state, "is_freemium", False):
+    if getattr(request.state, "is_rapidapi", False):
+        is_valid = True
+        payment_info = {
+            "success": True,
+            "payer": request.headers.get("x-rapidapi-user", "rapidapi_subscriber"),
+            "transaction": "rapidapi_credit_card_billed",
+            "amount": "rapidapi_plan",
+            "network": "rapidapi",
+            "resource": res_url,
+        }
+        err_msg = None
+        status_code = 200
+    elif getattr(request.state, "is_freemium", False):
         is_valid = True
         payment_info = {
             "success": True,
