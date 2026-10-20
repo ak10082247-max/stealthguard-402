@@ -748,6 +748,14 @@ async def x402_manifest():
 async def openapi_spec():
     return app.openapi()
 
+@app.get("/rapidapi_openapi.json", include_in_schema=False)
+async def rapidapi_openapi_spec():
+    spec_path = os.path.join(os.path.dirname(__file__), "..", "rapidapi_openapi.json")
+    if os.path.exists(spec_path):
+        with open(spec_path, "r", encoding="utf-8") as f:
+            return JSONResponse(content=json.load(f))
+    return app.openapi()
+
 # Free Sample Discovery Probe
 @app.get("/v1/health_and_sample", include_in_schema=False)
 @app.post("/v1/health_and_sample", include_in_schema=False)
