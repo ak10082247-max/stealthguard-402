@@ -100,6 +100,9 @@ PAID_PATH_TO_TOOL: Dict[str, str] = {
 # Cache pre-computed 402 challenges for sub-5ms immediate response
 CHALLENGE_CACHE: Dict[str, Tuple[Dict[str, str], Dict[str, Any]]] = {}
 
+# 1-Call Freemium Hook cache for trading bots (converts scrapers on call #2)
+FREE_TRIAL_IP_MAP: Dict[str, float] = {}
+
 def get_or_build_challenge(tool_name: str, res_url: str) -> Tuple[Dict[str, str], Dict[str, Any]]:
     cache_key = f"{tool_name}:{res_url}"
     if cache_key not in CHALLENGE_CACHE:
@@ -118,6 +121,7 @@ async def x402_pre_routing_interceptor(request: Request, call_next):
     Zero-friction x402 interceptor: Intercepts unpaid requests before FastAPI routing
     or Pydantic validation ever returns 405 Method Not Allowed or 422 Unprocessable Entity.
     Returns sub-2ms 402 challenge compliant with Coinbase CDP and x402scan.
+    Includes 1-Call Freemium Hook for trading bots to prove alpha value before requiring payment.
     """
     if request.method == "OPTIONS":
         return await call_next(request)
@@ -126,6 +130,26 @@ async def x402_pre_routing_interceptor(request: Request, call_next):
     if path in PAID_PATH_TO_TOOL:
         payment_header = request.headers.get("PAYMENT-SIGNATURE") or request.headers.get("X-PAYMENT")
         if not payment_header:
+            forwarded = request.headers.get("x-forwarded-for")
+            raw_ip = forwarded.split(",")[0].strip() if forwarded else (request.headers.get("x-real-ip") or (request.client.host if request.client else "unknown"))
+            client_ip = raw_ip.lower()
+            user_agent = request.headers.get("user-agent", "").lower()
+            is_probe = any(p in user_agent for p in [
+                "probe", "crawler", "spider", "mcp", "glama", "rokmcp", "lumiere", "wellknown", "mcpbeat", "heldfast"
+            ])
+
+            # 1-Call Freemium Hook: Provide real alpha on Call #1 to trading bots, convert to paid on Call #2
+            if not is_probe and client_ip != "unknown" and request.method in ("POST", "GET") and not path.startswith("/mcp"):
+                now = time.time()
+                last_used = FREE_TRIAL_IP_MAP.get(client_ip)
+                if not last_used or (now - last_used > 86400):
+                    FREE_TRIAL_IP_MAP[client_ip] = now
+                    request.state.is_freemium = True
+                    response = await call_next(request)
+                    response.headers["X-Free-Trial-Remaining"] = "0"
+                    response.headers["X-Trial-Notice"] = "1 free daily alpha scan consumed. Subsequent calls require x402 payment."
+                    return response
+
             tool_name = PAID_PATH_TO_TOOL[path]
             proto = request.headers.get("x-forwarded-proto", request.url.scheme)
             host = request.headers.get("host", request.url.netloc)
@@ -733,11 +757,24 @@ async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict
     payment_header = request.headers.get("PAYMENT-SIGNATURE") or request.headers.get("X-PAYMENT")
     res_url = enforce_https(str(request.url).split("?")[0])
 
-    is_valid, payment_info, err_msg, status_code = verify_x402_payment(
-        raw_header=payment_header,
-        tool_name=tool_name,
-        resource_url=res_url,
-    )
+    if getattr(request.state, "is_freemium", False):
+        is_valid = True
+        payment_info = {
+            "success": True,
+            "payer": "freemium_trial_agent",
+            "transaction": "freemium_1_of_1",
+            "amount": "0",
+            "network": "freemium",
+            "resource": res_url,
+        }
+        err_msg = None
+        status_code = 200
+    else:
+        is_valid, payment_info, err_msg, status_code = verify_x402_payment(
+            raw_header=payment_header,
+            tool_name=tool_name,
+            resource_url=res_url,
+        )
     if not is_valid:
         pricing = TOOL_PRICING[tool_name]
         headers, challenge_body = build_402_challenge(
