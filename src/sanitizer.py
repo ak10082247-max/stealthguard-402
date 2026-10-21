@@ -8,9 +8,23 @@ INVISIBLE_CHARACTERS = re.compile(r'[\u00ad\u180e\u200b-\u200f\u202a-\u202e\u206
 ROLE_DELIMITER = re.compile(r'\[/?INST\]|<\|(?:im_start|im_end|system|developer|assistant|user)\|>|<<\/?SYS>>|【\/?(?:システム|指示|命令|プロンプト|役割|開発者|System|Developer|Assistant|User|Instruction|系统|系統|指令|提示|规则|規則|시스템|지침|명령)】|\[\/?(?:システム|指示|命令|プロンプト|役割|開発者|系统|系統|指令|提示|规则|規則|시스템|지침|명령)\]', re.IGNORECASE)
 ROLE_PREFIX = re.compile(r'(?:^|[\r\n])\s*(?:system|developer|assistant|admin|root|superuser|operator|jailbreak|DAN|instruction|prompt|システム|開発者|指示|系统|系統|指令|시스템|지침)\s*[:：]', re.IGNORECASE)
 INSTRUCTION_OVERRIDE = re.compile(
-    r'\b(?:(?:ignore|disregard|forget|override)\s+(?:(?:all|any|the|your|our)\s+)*(?:previous|prior|earlier|above|system|developer)\s+(?:instructions?|prompts?|rules?|messages?)|'
-    r'(?:you\s+(?:are\s+to|must|will)\s+)?(?:do\s+(?:what|as)\s+i\s+(?:say|tell\s+you)|obey(?:\s+(?:all|only|my)\s+(?:commands?|instructions?))?)|'
-    r'follow\s+only\s+(?:my|these)\s+instructions?)\b',
+    r'\b(?:(?:ignore|disregard|forget|override|bypass|supersede|discard|neglect|abandon|drop|clear|reset|cancel|revoke|overwrite|circumvent|violate|disable|suspend|deactivate|stop|cease|wipe|purge|erase)\s+(?:(?:all|any|the|your|our|every|everything|these|those|prior|previous|earlier|above|system|developer|safety|guardrail|original|initial|memory)\s+)*(?:instructions?|prompts?|rules?|messages?|directives?|guidelines?|constraints?|parameters?|policies|filters?|guardrails?|configuration|settings|restrictions?|programming|memory|context)|'
+    r'(?:you\s+(?:are\s+to|must|will|shall)\s+)?(?:do\s+(?:what|as)\s+i\s+(?:say|tell\s+you)|obey(?:\s+(?:all|only|my)\s+(?:commands?|instructions?))?)|'
+    r'follow\s+only\s+(?:my|these)\s+instructions?|from\s+now\s+(?:on|onward)\s+(?:you\s+(?:will|must|shall)|act\s+as|treat|regard|disregard)|'
+    r'administrative\s+override|disregard\s+all\s+prior)\b',
+    re.IGNORECASE
+)
+JAILBREAK_ROLEPLAY = re.compile(
+    r'\b(?:(?:act\s+as|pretend\s+(?:to\s+be|you\s+are)|simulate|roleplay\s+as|you\s+are\s+now)\s+(?:an?\s+)*(?:unrestricted|jailbreak(?:ed)?|DAN|developer|root|admin|god\s+mode|unfiltered|evil|anarchist|hypothetical|system\s+operator)|'
+    r'(?:developer\s+mode|maintenance\s+mode|debug\s+mode|sandbox\s+mode|override\s+mode)\s+(?:enabled|activated|on|true)|do\s+anything\s+now|jailbreak\s+mode|unrestricted\s+system\s+operator)\b',
+    re.IGNORECASE
+)
+POLICY_AND_AUTHORITY_HIJACK = re.compile(
+    r'(?:\b(?:configuration\s+refresh\s+for\s+this\s+session|(?:operating|security|system|safety|guardrail|prior)?\s*policy\s+(?:that\s+applied\s+earlier\s+)?is\s+no\s+longer\s+in\s+force|(?:replacement|new|updated|alternative)\s+policy\s+is\s+to|delegation\s+notice\b|authority\s+(?:for\s+this\s+conversation\s+)?has\s+been\s+transferred|channel\s+restrictions\s+do\s+not\s+apply|acknowledge\s+nothing[;,\s]+simply\s+carry\s+out|refusal\s+behaviou?r\s*:\s*suspended|without\s+(?:commentary|refusals?|warnings?|disclaimers?)|must\s+comply\s+without\s+(?:commentary|refusals?)|context\s+window\s+truncated|remaining\s+lines\s+of\s+your\s+configuration\s+were|authority-transfer|policy-refresh|conformance-test|only-rule-matters|no-refusal)\b|\[\s*SYSTEM\s+CONTINUATION)',
+    re.IGNORECASE
+)
+CODE_COMPLETION_JAILBREAK = re.compile(
+    r'(?:complete|finish)\s+(?:the\s+following\s+)?(?:python|javascript|typescript|code|function)\s+(?:exactly\s*)?[,:]\s*filling\s+in.*(?:system|policy|prompt|secret|token|instructions?|code|rule)\b|def\s+[a-zA-Z0-9_]*(?:system|policy|secret|prompt|guard)[a-zA-Z0-9_]*\s*\(\s*\)\s*:\s*return\s*["\']',
     re.IGNORECASE
 )
 MULTILINGUAL_OVERRIDE = re.compile(
@@ -60,6 +74,12 @@ def detect_command_threats(val: str) -> List[str]:
         threats.append('role_delimiter_override')
     if INSTRUCTION_OVERRIDE.search(norm):
         threats.append('instruction_override')
+    if JAILBREAK_ROLEPLAY.search(norm):
+        threats.append('jailbreak_roleplay_detected')
+    if POLICY_AND_AUTHORITY_HIJACK.search(norm):
+        threats.append('policy_authority_hijack')
+    if CODE_COMPLETION_JAILBREAK.search(norm):
+        threats.append('code_completion_jailbreak')
     if MULTILINGUAL_OVERRIDE.search(norm):
         threats.append('multilingual_instruction_override')
     if matches_wallet_command(norm):
@@ -148,7 +168,7 @@ def tidy_text(val: str) -> str:
 def scrub_command_lines(val: str) -> str:
     blocked_marker = '[CANARY_REMOVED_INSTRUCTION]'
     marked = unicodedata.normalize('NFKC', val)
-    patterns = [ROLE_DELIMITER, ROLE_PREFIX, INSTRUCTION_OVERRIDE, MULTILINGUAL_OVERRIDE, WALLET_ASSET_COMMAND, WALLET_DESTINATION_COMMAND]
+    patterns = [ROLE_DELIMITER, ROLE_PREFIX, INSTRUCTION_OVERRIDE, JAILBREAK_ROLEPLAY, POLICY_AND_AUTHORITY_HIJACK, CODE_COMPLETION_JAILBREAK, MULTILINGUAL_OVERRIDE, WALLET_ASSET_COMMAND, WALLET_DESTINATION_COMMAND]
     for pattern in patterns:
         marked = pattern.sub(lambda m: '\n'.join([blocked_marker] * len(m.group(0).split('\n'))), marked)
     lines = [line for line in marked.split('\n') if blocked_marker not in line]
@@ -215,7 +235,7 @@ def sanitize_content(content: str, strict_mode: bool = True) -> Dict[str, Any]:
     sanitized_text = tidy_text(sanitized_text)
 
     # Heuristic risk calculation
-    risk_score = 0.01
+    risk_score = 0.0 if not findings else 0.05
     if 'html_markup_removed' in findings:
         risk_score = 0.05
     if 'concealed_unicode_removed' in findings or 'html_hidden_content_removed' in findings:
@@ -224,6 +244,12 @@ def sanitize_content(content: str, strict_mode: bool = True) -> Dict[str, Any]:
         risk_score = max(risk_score, 0.4)
     if 'role_delimiter_override' in detected_commands:
         risk_score = max(risk_score, 0.85)
+    if 'jailbreak_roleplay_detected' in detected_commands:
+        risk_score = max(risk_score, 0.96)
+    if 'policy_authority_hijack' in detected_commands:
+        risk_score = max(risk_score, 0.95)
+    if 'code_completion_jailbreak' in detected_commands:
+        risk_score = max(risk_score, 0.92)
     if 'instruction_override' in detected_commands or 'multilingual_instruction_override' in detected_commands:
         risk_score = max(risk_score, 0.95)
     if 'wallet_transfer_command' in detected_commands:
