@@ -717,6 +717,23 @@ async def glama_manifest():
         "homepage": get_public_url()
     }
 
+@app.get("/.well-known/oauth-protected-resource", include_in_schema=False)
+@app.get("/.well-known/oauth-protected-resource/mcp", include_in_schema=False)
+@app.get("/.well-known/oauth-authorization-server", include_in_schema=False)
+@app.get("/.well-known/openid-configuration", include_in_schema=False)
+async def oauth_protected_resource():
+    public_url = get_public_url()
+    return {
+        "resource": public_url,
+        "authorization_servers": [],
+        "scopes_supported": ["mcp:read", "mcp:call"],
+        "bearer_methods_supported": ["header"],
+        "auth_schemes": ["x402-v2-eip712", "x402-v2-solana"],
+        "payment_recipient": get_recipient_address(),
+        "documentation": f"{public_url}/docs",
+        "note": "Protected via on-chain x402 V2 gasless micropayments (EIP-712 / SPL TransferChecked)."
+    }
+
 @app.get("/help", include_in_schema=False)
 @app.get("/faq", include_in_schema=False)
 @app.get("/faqs", include_in_schema=False)

@@ -263,6 +263,33 @@ async def handle_mcp_request(
             },
         }, None
 
+    # 1b. Server Discover & Info (for DSS MCP Survey and extended crawlers)
+    if method in ("server/discover", "server/info"):
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {
+                    "tools": {"listChanged": False},
+                    "resources": {"subscribe": False, "listChanged": False},
+                    "prompts": {"listChanged": False},
+                },
+                "serverInfo": {
+                    "name": "stealthguard-402",
+                    "displayName": "StealthGuard-402",
+                    "title": "StealthGuard 402",
+                    "version": SERVICE_VERSION,
+                    "description": "Stealth web scraper bypassing Cloudflare anti-bot via Scrapling, extracts clean DOM to Markdown, and sanitizes prompt injections with x402 micropayments on Base.",
+                    "homepage": "https://stealthguard-402.onrender.com",
+                    "websiteUrl": "https://stealthguard-402.onrender.com",
+                    "icon": "https://stealthguard-402.onrender.com/favicon.ico",
+                    "iconUrl": "https://stealthguard-402.onrender.com/favicon.ico",
+                },
+                "tools": MCP_TOOLS,
+            },
+        }, None
+
     # 2. Ping
     if method == "ping":
         return {"jsonrpc": "2.0", "id": req_id, "result": {}}, None
