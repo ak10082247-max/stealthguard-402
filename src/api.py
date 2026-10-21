@@ -679,7 +679,12 @@ async def agent_card():
 @app.get("/.well-known/mcp-server-card", include_in_schema=False)
 @app.get("/.well-known/mcp-server-card.json", include_in_schema=False)
 @app.get("/.well-known/server-card.json", include_in_schema=False)
+@app.get("/.well-known/server.json", include_in_schema=False)
 @app.get("/.well-known/ai-catalog.json", include_in_schema=False)
+@app.get("/server-card.json", include_in_schema=False)
+@app.get("/server.json", include_in_schema=False)
+@app.get("/mcp/server-card", include_in_schema=False)
+@app.get("/mcp/server-card.json", include_in_schema=False)
 async def mcp_server_card():
     public_url = get_public_url()
     return {
@@ -700,6 +705,50 @@ async def mcp_server_card():
             "resources": {"count": 0},
             "prompts": {"count": 0},
         },
+    }
+
+
+@app.get("/glama.json", include_in_schema=False)
+@app.get("/.well-known/glama.json", include_in_schema=False)
+async def glama_manifest():
+    return {
+        "$schema": "https://glama.ai/mcp/schemas/server.json",
+        "maintainers": ["ak10082247-max"],
+        "homepage": get_public_url()
+    }
+
+@app.get("/help", include_in_schema=False)
+@app.get("/faq", include_in_schema=False)
+@app.get("/faqs", include_in_schema=False)
+@app.get("/support", include_in_schema=False)
+@app.get("/guide", include_in_schema=False)
+async def help_faq_endpoint():
+    public_url = get_public_url()
+    return {
+        "service": "StealthGuard 402",
+        "tagline": "Polymarket Whale Orderflow and Stealth Web Scraping Oracle",
+        "faq": [
+            {
+                "question": "What is StealthGuard 402?",
+                "answer": "StealthGuard tracks live Polymarket whale orderflow, crypto odds divergence, and performs stealth anti-bot web scraping with automated prompt injection sanitization."
+            },
+            {
+                "question": "How do payments work?",
+                "answer": "All endpoints are metered via HTTP 402 (x402 V2). Agents pay micropayments ($0.010 - $0.020 USDC) via EIP-712 on Base or SPL Token TransferChecked on Solana."
+            },
+            {
+                "question": "Do I need ETH or SOL for gas?",
+                "answer": "No. Settlements are 100% gasless ($0 ETH / $0 SOL required) through Coinbase CDP and PayAI facilitator sponsorship."
+            }
+        ],
+        "resources": {
+            "documentation": f"{public_url}/openapi.json",
+            "discovery": f"{public_url}/.well-known/x402.json",
+            "mcp_card": f"{public_url}/mcp/server-card",
+        },
+        "support": {
+            "github": "https://github.com/ak10082247-max/stealthguard-402"
+        }
     }
 
 @app.get("/.well-known/x402", include_in_schema=False)
