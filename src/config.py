@@ -116,7 +116,11 @@ TOOL_PRICING: Dict[str, Dict[str, Any]] = {
             "status": "success",
             "token_or_service_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
             "chain": "base",
-            "verdict": "CLEAR_TO_TRADE",
+            "verdict": "TRUST",
+            "honeypot_detected": False,
+            "buy_tax_bps": 0,
+            "sell_tax_bps": 0,
+            "liquidity_usd": 145000,
             "risk_score": 0.0,
             "checks": {
                 "honeypot": False,
@@ -432,6 +436,11 @@ TOOL_PRICING: Dict[str, Dict[str, Any]] = {
         },
         "example_output": {
             "status": "success",
+            "verdict": "TRUST",
+            "honeypot_detected": False,
+            "buy_tax_bps": 0,
+            "sell_tax_bps": 0,
+            "liquidity_usd": 145000,
             "attestation": {
                 "prompt_safety": {"risk_score": 0.0, "verdict": "SAFE"},
                 "domain_safety": {"url": "https://app.uniswap.org", "verdict": "SAFE_DOMAIN"},

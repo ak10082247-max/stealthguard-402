@@ -632,6 +632,8 @@ async def agent_card():
     return {
         "type": "https://eips.ethereum.org/EIPS/eip-8004",
         "name": SERVICE_NAME,
+        "agentId": 335687,
+        "agent_id": 335687,
         "description": "Autonomous AI Agent Security Gate & Alpha Engine: Stealth web extraction, Polymarket prediction spread divergence, and Base pre-trade safety fused with CanaryGuard prompt-injection firewall.",
         "version": SERVICE_VERSION,
         "image": f"{public_url}/logo.png",
