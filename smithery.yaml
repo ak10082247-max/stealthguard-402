@@ -6,11 +6,22 @@ websiteUrl: https://stealthguard-402.onrender.com
 iconUrl: https://stealthguard-402.onrender.com/favicon.ico
 icon: https://stealthguard-402.onrender.com/favicon.ico
 repository: https://github.com/ak10082247-max/stealthguard-402
+tags:
+  - web-scraping
+  - anti-bot
+  - scrapling
+  - polymarket
+  - security
+  - base
+  - x402
+  - usdc
+  - mcp
 
 runtime: container
 build:
   dockerfile: Dockerfile
   dockerBuildPath: .
+
 startCommand:
   type: http
   url: https://stealthguard-402.onrender.com/mcp
@@ -19,3 +30,99 @@ startCommand:
     properties: {}
     additionalProperties: false
   exampleConfig: {}
+
+tools:
+  - name: stealth_scrape_and_sanitize
+    description: Stealth-scrapes any target URL bypassing Cloudflare/anti-bot gates via Scrapling, strips HTML boilerplate to clean Markdown, and sanitizes prompt injections.
+    inputSchema:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          description: Target HTTP/HTTPS URL to stealth-scrape and extract clean markdown from.
+        render_js:
+          type: boolean
+          default: false
+          description: Whether to enable stealth headless browser rendering for JS-heavy single-page apps.
+        strict_mode:
+          type: boolean
+          default: true
+          description: True hard-blocks prompt injections; false scrubs threat tokens while preserving safe text.
+    outputSchema:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          description: Execution status (success or error).
+        content:
+          type: array
+          description: Structured text content returned to the LLM agent.
+        data:
+          type: object
+          description: Sanitized markdown DOM and verification metrics.
+        payment:
+          type: object
+          description: x402 protocol payment settlement details.
+
+  - name: polymarket_alpha_divergence
+    description: Scans live Polymarket prediction orderbooks for whale-driven probability divergence versus spot crypto markets.
+    inputSchema:
+      type: object
+      properties:
+        category:
+          type: string
+          default: crypto
+          description: Market category filter (crypto, politics, fed, ai).
+        limit:
+          type: integer
+          default: 25
+          description: Maximum number of live prediction markets to evaluate.
+        strict_mode:
+          type: boolean
+          default: true
+          description: Whether to sanitize scraped market notes against prompt injections.
+    outputSchema:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+        content:
+          type: array
+        data:
+          type: object
+          description: Polymarket orderbook skews and divergence rankings.
+
+  - name: pre_trade_agent_gate
+    description: Pre-trade safety gate auditing contract addresses on Base or Solana, checking for honeypots, malicious transfer hooks, and phishing URLs.
+    inputSchema:
+      type: object
+      required:
+        - token_or_service_address
+      properties:
+        token_or_service_address:
+          type: string
+          description: Contract address on Base (0x...) or Solana base58 mint address.
+        chain:
+          type: string
+          enum: [base, solana]
+          default: base
+          description: Target ecosystem.
+        target_url:
+          type: string
+          description: Associated project homepage to scan for phishing traps.
+    outputSchema:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+        data:
+          type: object
+          description: Pre-trade verdict and security clearance score.
