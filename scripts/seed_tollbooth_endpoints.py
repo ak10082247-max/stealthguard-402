@@ -140,6 +140,42 @@ def main():
             "description": desc,
             "mimeType": "application/json",
         }
+        if "ai_intel" in url:
+            sample_out = {
+                "status": "success",
+                "contractAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                "vulnerabilities": [],
+                "risk_score": 0.0,
+                "audit_status": "PASSED",
+                "safety_receipt": "canary-v1-verified"
+            }
+        elif "arbitrage_scan" in url:
+            sample_out = {
+                "status": "success",
+                "pair": "WETH/USDC",
+                "spread_bps": 14.2,
+                "dex_route": ["UniswapV3", "Aerodrome"],
+                "expected_net_usdc": 1.45,
+                "profitable": True
+            }
+        elif "smart_router" in url:
+            sample_out = {
+                "status": "success",
+                "tokenIn": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                "tokenOut": "0x4200000000000000000000000000000000000006",
+                "optimal_route": "Aerodrome",
+                "expected_out": "0.000382",
+                "slippage_bps": 20,
+                "estimated_gas_usd": "0.0012"
+            }
+        else:
+            sample_out = {
+                "status": "success",
+                "service": "x402-agent-tollbooth",
+                "endpoint": url,
+                "verified_by": "CanaryGuard"
+            }
+
         bazaar_ext = {
             "name": f"x402-agent-tollbooth - {ep['title']}",
             "description": desc,
@@ -153,12 +189,7 @@ def main():
                     "price": f"{price} USDC",
                 },
                 "output": {
-                    "example": {
-                        "status": "success",
-                        "service": "x402-agent-tollbooth",
-                        "endpoint": url,
-                        "verified_by": "CanaryGuard",
-                    }
+                    "example": sample_out
                 }
             },
             "schema": {

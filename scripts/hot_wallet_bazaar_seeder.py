@@ -37,7 +37,7 @@ import httpx
 # Ensure project root is in sys.path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.config import ASSET, NETWORK, get_recipient_address
+from src.config import ASSET, NETWORK, get_recipient_address, TOOL_PRICING
 from src.x402_middleware import (
     load_cdp_credentials,
     generate_cdp_jwt,
@@ -262,6 +262,50 @@ def main():
             "mimeType": "application/json",
         }
 
+        matching_pricing = None
+        for t_name, p_data in TOOL_PRICING.items():
+            if p_data.get("path") and p_data["path"] in url:
+                matching_pricing = p_data
+                break
+
+        if matching_pricing and "example_output" in matching_pricing:
+            out_example = matching_pricing["example_output"]
+        elif "sanitize" in url:
+            out_example = {
+                "status": "success",
+                "sanitized": True,
+                "risk_score": 0.0,
+                "threats_detected": [],
+                "safety_receipt": "canary-v1-verified"
+            }
+        elif "token" in url:
+            out_example = {
+                "status": "success",
+                "token_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                "chain": "base",
+                "honeypot": False,
+                "tax_pct": 0.0,
+                "verdict": "VERIFIED_SAFE"
+            }
+        elif "scan" in url:
+            out_example = {
+                "status": "success",
+                "token_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                "is_honeypot": False,
+                "buy_tax": 0.0,
+                "sell_tax": 0.0,
+                "simulation_status": "SUCCESS",
+                "verdict": "SAFE"
+            }
+        else:
+            out_example = {
+                "status": "success",
+                "service": service,
+                "endpoint": url,
+                "verdict": "ALL_CLEAR",
+                "safety_receipt": "canary-v1-verified"
+            }
+
         bazaar_ext = {
             "name": f"{service} - {title}",
             "description": desc,
@@ -275,12 +319,7 @@ def main():
                     "price": f"{price} USDC",
                 },
                 "output": {
-                    "example": {
-                        "status": "success",
-                        "service": service,
-                        "endpoint": url,
-                        "verified_by": "Kurox Fleet",
-                    }
+                    "example": out_example
                 }
             },
             "schema": {
