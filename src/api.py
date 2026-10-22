@@ -283,13 +283,22 @@ async def robots_txt():
         "Allow: /\n\n"
         "User-agent: GPTBot\n"
         "Allow: /\n\n"
+        "User-agent: ChatGPT-User\n"
+        "Allow: /\n\n"
         "User-agent: ClaudeBot\n"
         "Allow: /\n\n"
         "User-agent: PerplexityBot\n"
         "Allow: /\n\n"
         "User-agent: Google-Extended\n"
         "Allow: /\n\n"
+        "User-agent: Applebot-Extended\n"
+        "Allow: /\n\n"
+        "User-agent: Meta-ExternalAgent\n"
+        "Allow: /\n\n"
+        "User-agent: CCBot\n"
+        "Allow: /\n\n"
         f"Sitemap: {public_url}/sitemap.xml\n"
+        f"LLMs-Txt: {public_url}/llms.txt\n"
     )
 
 @app.get("/sitemap.xml", response_class=Response, include_in_schema=False)
