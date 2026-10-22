@@ -275,6 +275,11 @@ async def llms_full_txt():
             return f.read()
     return await llms_txt()
 
+@app.get("/kurox402indexnowkey20261022abc.txt", response_class=PlainTextResponse, include_in_schema=False)
+async def indexnow_key():
+    # IndexNow ownership verification key (must be served at the domain root)
+    return "kurox402indexnowkey20261022abc"
+
 @app.get("/robots.txt", response_class=PlainTextResponse, include_in_schema=False)
 async def robots_txt():
     public_url = get_public_url()
