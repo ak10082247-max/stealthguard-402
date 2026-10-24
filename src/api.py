@@ -190,13 +190,10 @@ async def parse_request_data(request: Request) -> Dict[str, Any]:
     data: Dict[str, Any] = {}
     if request.query_params:
         data.update(dict(request.query_params))
-    if request.method == "POST":
-        try:
-            body = await request.json()
-            if isinstance(body, dict):
-                data.update(body)
-        except Exception:
-            pass
+    if request.method in ("POST", "PUT", "PATCH"):
+        body = await request.json()
+        if isinstance(body, dict):
+            data.update(body)
     return data
 
 # ==============================================================================
@@ -852,6 +849,39 @@ async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict
     payment_header = request.headers.get("PAYMENT-SIGNATURE") or request.headers.get("X-PAYMENT")
     res_url = enforce_https(str(request.url).split("?")[0])
 
+    # Pre-settlement extraction and validation: parse request input BEFORE payment settlement
+    try:
+        req_args = await parse_request_data(request)
+    except Exception as e:
+        return JSONResponse(status_code=400, content={
+            "error": "malformed_json",
+            "message": f"Malformed JSON request body: {str(e)}",
+            "tool": tool_name
+        })
+    merged_args = {**default_args, **req_args}
+
+    if tool_name == "stealth_scrape_and_sanitize":
+        target_url = merged_args.get("url")
+        is_valid_url = False
+        if target_url and isinstance(target_url, str):
+            try:
+                import urllib.parse
+                parsed = urllib.parse.urlparse(target_url)
+                if parsed.scheme in ("http", "https") and parsed.hostname:
+                    try:
+                        _ = parsed.port
+                        is_valid_url = True
+                    except ValueError:
+                        is_valid_url = False
+            except Exception:
+                is_valid_url = False
+        if not is_valid_url:
+            return JSONResponse(status_code=400, content={
+                "error": "invalid_url",
+                "message": f"Invalid or missing URL '{target_url}'. Must be a valid HTTP or HTTPS URL with valid hostname and numeric port.",
+                "tool": tool_name
+            })
+
     if getattr(request.state, "is_rapidapi", False):
         is_valid = True
         payment_info = {
@@ -981,13 +1011,38 @@ async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict
             import httpx
             async with httpx.AsyncClient(timeout=5.0) as client:
                 probe_res = await client.get(ep)
-                has_402_header = "payment-required" in probe_res.headers or "x-payment-required" in probe_res.headers or "www-authenticate" in probe_res.headers
-                if probe_res.status_code == 402 or has_402_header:
+                pay_hdr = probe_res.headers.get("payment-required") or probe_res.headers.get("x-payment-required")
+                parsed_challenge = None
+                if pay_hdr:
+                    try:
+                        raw = pay_hdr.strip()
+                        if not raw.startswith("{"):
+                            raw = base64.b64decode(raw).decode("utf-8")
+                        parsed_challenge = json.loads(raw)
+                    except Exception:
+                        parsed_challenge = None
+
+                if not parsed_challenge and probe_res.status_code == 402:
+                    try:
+                        parsed_challenge = probe_res.json()
+                    except Exception:
+                        pass
+
+                is_valid_x402_schema = isinstance(parsed_challenge, dict) and parsed_challenge.get("x402Version") in (1, 2, "1", "2") and (
+                    (isinstance(parsed_challenge.get("accepts"), list) and len(parsed_challenge["accepts"]) > 0 and all(isinstance(a, dict) for a in parsed_challenge["accepts"])) or
+                    (isinstance(parsed_challenge.get("paymentRequirements"), list) and len(parsed_challenge["paymentRequirements"]) > 0 and all(isinstance(r, dict) for r in parsed_challenge["paymentRequirements"])) or
+                    (isinstance(parsed_challenge.get("paymentRequirements"), dict) and len(parsed_challenge["paymentRequirements"]) > 0)
+                )
+
+                if probe_res.status_code == 402 and is_valid_x402_schema:
                     is_authentic_402 = True
-                    probe_notes = f"Verified HTTP {probe_res.status_code} with authentic x402 challenge headers."
+                    probe_notes = f"Verified HTTP 402 with valid x402 challenge schema and payment requirements."
+                elif probe_res.status_code == 402:
+                    is_authentic_402 = False
+                    probe_notes = "Endpoint returned HTTP 402, but challenge headers/body lack valid x402 protocol schema."
                 else:
                     is_authentic_402 = False
-                    probe_notes = f"Endpoint returned HTTP {probe_res.status_code} without x402 payment headers. Not an active x402 service."
+                    probe_notes = f"Endpoint returned HTTP {probe_res.status_code} (not HTTP 402). Not an active x402 service."
         except Exception as e:
             is_authentic_402 = False
             probe_notes = f"Endpoint unreachable or probe error: {str(e)}"

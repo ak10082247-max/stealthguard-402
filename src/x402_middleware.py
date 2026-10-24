@@ -656,6 +656,7 @@ def verify_x402_payment(
                 if r.status_code == 200 and data.get("success"):
                     REPLAY_CACHE[sol_hash] = time.time() + 86400
                     return True, {
+                        "success": True,
                         "payer": data.get("payer") or (parsed.get("payload") or {}).get("payer") or "solana-payer",
                         "amount": str(required_units),
                         "transaction": data.get("transaction") or sol_hash,
