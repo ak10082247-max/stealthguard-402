@@ -1028,10 +1028,56 @@ async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict
                     except Exception:
                         pass
 
-                is_valid_x402_schema = isinstance(parsed_challenge, dict) and parsed_challenge.get("x402Version") in (1, 2, "1", "2") and (
-                    (isinstance(parsed_challenge.get("accepts"), list) and len(parsed_challenge["accepts"]) > 0 and all(isinstance(a, dict) for a in parsed_challenge["accepts"])) or
-                    (isinstance(parsed_challenge.get("paymentRequirements"), list) and len(parsed_challenge["paymentRequirements"]) > 0 and all(isinstance(r, dict) for r in parsed_challenge["paymentRequirements"])) or
-                    (isinstance(parsed_challenge.get("paymentRequirements"), dict) and len(parsed_challenge["paymentRequirements"]) > 0)
+                is_valid_x402_schema = (
+                    isinstance(parsed_challenge, dict)
+                    and not isinstance(parsed_challenge.get("x402Version"), bool)
+                    and parsed_challenge.get("x402Version") in (1, 2, "1", "2")
+                    and (
+                        (
+                            isinstance(parsed_challenge.get("accepts"), list)
+                            and len(parsed_challenge["accepts"]) > 0
+                            and all(
+                                isinstance(a, dict)
+                                and a.get("scheme") in ("exact", "upto")
+                                and isinstance(a.get("network"), str) and (":" in a["network"] or a["network"] in ("base", "solana"))
+                                and (
+                                    (isinstance(a.get("amount"), (int, float)) and not isinstance(a.get("amount"), bool) and a["amount"] > 0)
+                                    or (isinstance(a.get("amount"), str) and a["amount"].isdigit() and int(a["amount"]) > 0)
+                                )
+                                and isinstance(a.get("asset"), str) and (
+                                    (a["asset"].startswith("0x") and len(a["asset"]) == 42 and all(c in "0123456789abcdefABCDEF" for c in a["asset"][2:]))
+                                    or (len(a["asset"]) in (43, 44) and not a["asset"].startswith("not-"))
+                                )
+                                and isinstance(a.get("payTo"), str) and (
+                                    (a["payTo"].startswith("0x") and len(a["payTo"]) == 42 and all(c in "0123456789abcdefABCDEF" for c in a["payTo"][2:]))
+                                    or (len(a["payTo"]) in (43, 44) and not a["payTo"].startswith("not-"))
+                                )
+                                for a in parsed_challenge["accepts"]
+                            )
+                        )
+                        or (
+                            isinstance(parsed_challenge.get("paymentRequirements"), list)
+                            and len(parsed_challenge["paymentRequirements"]) > 0
+                            and all(
+                                isinstance(r, dict)
+                                and r.get("scheme") in ("exact", "upto")
+                                and isinstance(r.get("network"), str) and (":" in r["network"] or r["network"] in ("base", "solana"))
+                                and (
+                                    (isinstance(r.get("amount"), (int, float)) and not isinstance(r.get("amount"), bool) and r["amount"] > 0)
+                                    or (isinstance(r.get("amount"), str) and r["amount"].isdigit() and int(r["amount"]) > 0)
+                                )
+                                and isinstance(r.get("asset"), str) and (
+                                    (r["asset"].startswith("0x") and len(r["asset"]) == 42 and all(c in "0123456789abcdefABCDEF" for c in r["asset"][2:]))
+                                    or (len(r["asset"]) in (43, 44) and not r["asset"].startswith("not-"))
+                                )
+                                and isinstance(r.get("payTo"), str) and (
+                                    (r["payTo"].startswith("0x") and len(r["payTo"]) == 42 and all(c in "0123456789abcdefABCDEF" for c in r["payTo"][2:]))
+                                    or (len(r["payTo"]) in (43, 44) and not r["payTo"].startswith("not-"))
+                                )
+                                for r in parsed_challenge["paymentRequirements"]
+                            )
+                        )
+                    )
                 )
 
                 if probe_res.status_code == 402 and is_valid_x402_schema:
