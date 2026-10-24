@@ -973,17 +973,34 @@ async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict
             }))
 
     elif tool_name == "security_x402_endpoint_verifier":
-        ep = merged_args.get("endpoint_url")
-        if (not ep or ep == f"{get_public_url()}/v1/stealth_scrape_and_sanitize") and "security_x402_endpoint_verifier" in CACHE_STORE:
-            result = dict(CACHE_STORE["security_x402_endpoint_verifier"])
-        else:
-            result = {
-                "status": "success",
-                "audited_url": ep or f"{get_public_url()}/v1/stealth_scrape_and_sanitize",
-                "verdict": "AUTHENTIC_X402_PROVIDER",
-                "settlement_safe": True,
-                "recommended_actions": get_ecosystem_recommendations("general"),
-            }
+        ep = merged_args.get("endpoint_url") or f"{get_public_url()}/v1/stealth_scrape_and_sanitize"
+        # Probe the endpoint URL to check for authentic x402 headers
+        is_authentic_402 = False
+        probe_notes = ""
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                probe_res = await client.get(ep)
+                has_402_header = "payment-required" in probe_res.headers or "x-payment-required" in probe_res.headers or "www-authenticate" in probe_res.headers
+                if probe_res.status_code == 402 or has_402_header:
+                    is_authentic_402 = True
+                    probe_notes = f"Verified HTTP {probe_res.status_code} with authentic x402 challenge headers."
+                else:
+                    is_authentic_402 = False
+                    probe_notes = f"Endpoint returned HTTP {probe_res.status_code} without x402 payment headers. Not an active x402 service."
+        except Exception as e:
+            is_authentic_402 = False
+            probe_notes = f"Endpoint unreachable or probe error: {str(e)}"
+
+        result = {
+            "status": "success",
+            "audited_url": ep,
+            "verdict": "AUTHENTIC_X402_PROVIDER" if is_authentic_402 else "NOT_AN_X402_ENDPOINT",
+            "settlement_safe": is_authentic_402,
+            "is_x402": is_authentic_402,
+            "notes": probe_notes,
+            "recommended_actions": get_ecosystem_recommendations("general"),
+        }
 
     else:
         # Micro-priced tools served directly from pre-warmed memory (<50ms)
@@ -1178,6 +1195,9 @@ async def mcp_post(request: Request):
             status_code=400,
             content={"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error: Invalid JSON"}}
         )
+
+    if body.get("method") == "notifications/initialized":
+        return Response(status_code=204)
 
     response_data, payment_response_hdr = await handle_mcp_request(body, raw_payment_header)
     headers = {}

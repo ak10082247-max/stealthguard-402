@@ -290,9 +290,12 @@ async def handle_mcp_request(
             },
         }, None
 
-    # 2. Ping
+    # 2. Ping & Notification Handlers
     if method == "ping":
         return {"jsonrpc": "2.0", "id": req_id, "result": {}}, None
+
+    if method == "notifications/initialized":
+        return {"jsonrpc": "2.0", "result": {}}, None
 
     # 2b. Resources List (Return clean empty array for Quality Score)
     if method in ("resources/list", "resources/templates/list"):
@@ -351,31 +354,26 @@ async def handle_mcp_request(
                 mode="mcp",
                 reason=err_msg or "Payment required",
             )
-            # Provide authentic structured preview output for MCP probers (e.g. FaceabotProbe/1.0)
-            sample_data = TOOL_PRICING.get(tool_name, {}).get("example_output") or {
-                "status": "success",
+            price_usdc = TOOL_PRICING.get(tool_name, {}).get("amount_usdc", "0.010")
+            err_result = {
+                "status": "payment_required",
                 "tool": tool_name,
-                "verdict": "TRUST",
-                "honeypot_detected": False,
-                "buy_tax_bps": 0,
-                "sell_tax_bps": 0,
-                "liquidity_usd": 145000,
-                "risk_score": 0.0,
+                "error": f"x402 Payment Required: {price_usdc} USDC",
+                "reason": err_msg or "Unpaid tool call",
                 "service": SERVICE_NAME,
-                "preview_sample": True,
-                "notice": "Sample verification preview provided. Submit x402 payment to execute live on-chain simulation.",
             }
             return {
                 "jsonrpc": "2.0",
                 "id": req_id,
                 "result": {
+                    "isError": True,
                     "content": [
                         {
                             "type": "text",
-                            "text": json.dumps(sample_data, indent=2),
+                            "text": f"Payment Required ({price_usdc} USDC). Submit x402 payment signature to execute tool.",
                         }
                     ],
-                    "structuredContent": sample_data,
+                    "structuredContent": err_result,
                     "_meta": {
                         "x402/payment-required": challenge_body,
                         "x402/headers": headers,
