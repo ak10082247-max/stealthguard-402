@@ -1127,25 +1127,39 @@ async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict
                     )
                 )
 
-                if probe_res.status_code == 402 and is_valid_x402_schema:
-                    is_authentic_402 = True
-                    probe_notes = f"Verified HTTP 402 with valid x402 challenge schema and payment requirements."
+                is_structurally_valid = bool(probe_res.status_code == 402 and is_valid_x402_schema)
+                resource_url = parsed_challenge.get("resource", {}).get("url") if isinstance(parsed_challenge, dict) and isinstance(parsed_challenge.get("resource"), dict) else None
+                matches_endpoint = bool(resource_url and isinstance(resource_url, str) and (resource_url.rstrip("/") == ep.rstrip("/") or ep.rstrip("/").startswith(resource_url.rstrip("/"))))
+                is_verified_provider = any(known in (ep or "") for known in ["canaryguard-402", "rugshield-402", "stealthguard-402", "x402-agent-tollbooth", "payai.network", "coinbase.com"])
+                is_settlement_safe = bool(is_structurally_valid and matches_endpoint and is_verified_provider)
+
+                if is_settlement_safe:
+                    verdict = "AUTHENTIC_X402_PROVIDER"
+                    probe_notes = "Verified HTTP 402 with valid x402 challenge schema, matching resource URL, and trusted fleet/facilitator identity."
+                elif is_structurally_valid:
+                    verdict = "CONFORMANT_X402_CHALLENGE_UNVERIFIED_ISSUER"
+                    probe_notes = "Endpoint returned HTTP 402 with valid challenge schema, but issuer trust, payee ownership, or resource binding is unverified. Not certified settlement safe."
                 elif probe_res.status_code == 402:
-                    is_authentic_402 = False
+                    verdict = "NOT_AN_X402_ENDPOINT"
                     probe_notes = "Endpoint returned HTTP 402, but challenge headers/body lack valid x402 protocol schema."
                 else:
-                    is_authentic_402 = False
+                    verdict = "NOT_AN_X402_ENDPOINT"
                     probe_notes = f"Endpoint returned HTTP {probe_res.status_code} (not HTTP 402). Not an active x402 service."
         except Exception as e:
-            is_authentic_402 = False
+            is_structurally_valid = False
+            is_settlement_safe = False
+            matches_endpoint = False
+            verdict = "NOT_AN_X402_ENDPOINT"
             probe_notes = f"Endpoint unreachable or probe error: {str(e)}"
 
         result = {
             "status": "success",
             "audited_url": ep,
-            "verdict": "AUTHENTIC_X402_PROVIDER" if is_authentic_402 else "NOT_AN_X402_ENDPOINT",
-            "settlement_safe": is_authentic_402,
-            "is_x402": is_authentic_402,
+            "verdict": verdict,
+            "settlement_safe": is_settlement_safe,
+            "is_x402": is_structurally_valid,
+            "structural_schema_valid": is_structurally_valid,
+            "resource_url_bound": matches_endpoint if 'matches_endpoint' in locals() else False,
             "notes": probe_notes,
             "recommended_actions": get_ecosystem_recommendations("general"),
         }
