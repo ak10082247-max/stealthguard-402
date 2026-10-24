@@ -194,6 +194,8 @@ async def parse_request_data(request: Request) -> Dict[str, Any]:
         body = await request.json()
         if isinstance(body, dict):
             data.update(body)
+        elif body is not None:
+            raise ValueError(f"Request body must be a JSON object, got {type(body).__name__}")
     return data
 
 # ==============================================================================
@@ -861,6 +863,12 @@ async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict
     merged_args = {**default_args, **req_args}
 
     if tool_name == "stealth_scrape_and_sanitize":
+        if "render_js" in req_args and not isinstance(req_args["render_js"], bool):
+            return JSONResponse(status_code=400, content={
+                "error": "invalid_parameter_type",
+                "message": "Parameter 'render_js' must be a boolean (true or false).",
+                "tool": tool_name
+            })
         target_url = merged_args.get("url")
         is_valid_url = False
         if target_url and isinstance(target_url, str):
@@ -1031,50 +1039,89 @@ async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict
                 is_valid_x402_schema = (
                     isinstance(parsed_challenge, dict)
                     and not isinstance(parsed_challenge.get("x402Version"), bool)
-                    and parsed_challenge.get("x402Version") in (1, 2, "1", "2")
                     and (
                         (
-                            isinstance(parsed_challenge.get("accepts"), list)
+                            parsed_challenge.get("x402Version") == 2
+                            and isinstance(parsed_challenge.get("resource"), dict)
+                            and isinstance(parsed_challenge["resource"].get("url"), str)
+                            and len(parsed_challenge["resource"]["url"]) > 0
+                            and isinstance(parsed_challenge.get("accepts"), list)
                             and len(parsed_challenge["accepts"]) > 0
                             and all(
                                 isinstance(a, dict)
                                 and a.get("scheme") in ("exact", "upto")
-                                and isinstance(a.get("network"), str) and (":" in a["network"] or a["network"] in ("base", "solana"))
+                                and isinstance(a.get("maxTimeoutSeconds"), int)
+                                and not isinstance(a.get("maxTimeoutSeconds"), bool)
+                                and a["maxTimeoutSeconds"] > 0
+                                and isinstance(a.get("amount"), str)
+                                and a["amount"].isdigit()
+                                and int(a["amount"]) > 0
+                                and isinstance(a.get("network"), str)
                                 and (
-                                    (isinstance(a.get("amount"), (int, float)) and not isinstance(a.get("amount"), bool) and a["amount"] > 0)
-                                    or (isinstance(a.get("amount"), str) and a["amount"].isdigit() and int(a["amount"]) > 0)
-                                )
-                                and isinstance(a.get("asset"), str) and (
-                                    (a["asset"].startswith("0x") and len(a["asset"]) == 42 and all(c in "0123456789abcdefABCDEF" for c in a["asset"][2:]))
-                                    or (len(a["asset"]) in (43, 44) and not a["asset"].startswith("not-"))
-                                )
-                                and isinstance(a.get("payTo"), str) and (
-                                    (a["payTo"].startswith("0x") and len(a["payTo"]) == 42 and all(c in "0123456789abcdefABCDEF" for c in a["payTo"][2:]))
-                                    or (len(a["payTo"]) in (43, 44) and not a["payTo"].startswith("not-"))
+                                    (
+                                        (a["network"] == "base" or (a["network"].startswith("eip155:") and len(a["network"]) > 7 and a["network"][7:].isdigit()))
+                                        and isinstance(a.get("asset"), str)
+                                        and a["asset"].startswith("0x")
+                                        and len(a["asset"]) == 42
+                                        and all(c in "0123456789abcdefABCDEF" for c in a["asset"][2:])
+                                        and isinstance(a.get("payTo"), str)
+                                        and a["payTo"].startswith("0x")
+                                        and len(a["payTo"]) == 42
+                                        and all(c in "0123456789abcdefABCDEF" for c in a["payTo"][2:])
+                                    )
+                                    or (
+                                        (a["network"] == "solana" or (a["network"].startswith("solana:") and len(a["network"]) > 7 and all(c in "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz" for c in a["network"][7:])))
+                                        and isinstance(a.get("asset"), str)
+                                        and 32 <= len(a["asset"]) <= 44
+                                        and all(c in "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz" for c in a["asset"])
+                                        and isinstance(a.get("payTo"), str)
+                                        and 32 <= len(a["payTo"]) <= 44
+                                        and all(c in "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz" for c in a["payTo"])
+                                    )
                                 )
                                 for a in parsed_challenge["accepts"]
                             )
                         )
                         or (
-                            isinstance(parsed_challenge.get("paymentRequirements"), list)
-                            and len(parsed_challenge["paymentRequirements"]) > 0
+                            parsed_challenge.get("x402Version") == 1
+                            and (
+                                (isinstance(parsed_challenge.get("accepts"), list) and len(parsed_challenge["accepts"]) > 0)
+                                or (isinstance(parsed_challenge.get("paymentRequirements"), list) and len(parsed_challenge["paymentRequirements"]) > 0)
+                            )
                             and all(
                                 isinstance(r, dict)
                                 and r.get("scheme") in ("exact", "upto")
-                                and isinstance(r.get("network"), str) and (":" in r["network"] or r["network"] in ("base", "solana"))
+                                and isinstance(r.get("maxTimeoutSeconds"), int)
+                                and not isinstance(r.get("maxTimeoutSeconds"), bool)
+                                and r["maxTimeoutSeconds"] > 0
                                 and (
-                                    (isinstance(r.get("amount"), (int, float)) and not isinstance(r.get("amount"), bool) and r["amount"] > 0)
+                                    (isinstance(r.get("maxAmountRequired"), str) and r["maxAmountRequired"].isdigit() and int(r["maxAmountRequired"]) > 0)
                                     or (isinstance(r.get("amount"), str) and r["amount"].isdigit() and int(r["amount"]) > 0)
                                 )
-                                and isinstance(r.get("asset"), str) and (
-                                    (r["asset"].startswith("0x") and len(r["asset"]) == 42 and all(c in "0123456789abcdefABCDEF" for c in r["asset"][2:]))
-                                    or (len(r["asset"]) in (43, 44) and not r["asset"].startswith("not-"))
+                                and isinstance(r.get("network"), str)
+                                and (
+                                    (
+                                        (r["network"] == "base" or (r["network"].startswith("eip155:") and len(r["network"]) > 7 and r["network"][7:].isdigit()))
+                                        and isinstance(r.get("asset"), str)
+                                        and r["asset"].startswith("0x")
+                                        and len(r["asset"]) == 42
+                                        and all(c in "0123456789abcdefABCDEF" for c in r["asset"][2:])
+                                        and isinstance(r.get("payTo"), str)
+                                        and r["payTo"].startswith("0x")
+                                        and len(r["payTo"]) == 42
+                                        and all(c in "0123456789abcdefABCDEF" for c in r["payTo"][2:])
+                                    )
+                                    or (
+                                        (r["network"] == "solana" or (r["network"].startswith("solana:") and len(r["network"]) > 7 and all(c in "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz" for c in r["network"][7:])))
+                                        and isinstance(r.get("asset"), str)
+                                        and 32 <= len(r["asset"]) <= 44
+                                        and all(c in "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz" for c in r["asset"])
+                                        and isinstance(r.get("payTo"), str)
+                                        and 32 <= len(r["payTo"]) <= 44
+                                        and all(c in "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz" for c in r["payTo"])
+                                    )
                                 )
-                                and isinstance(r.get("payTo"), str) and (
-                                    (r["payTo"].startswith("0x") and len(r["payTo"]) == 42 and all(c in "0123456789abcdefABCDEF" for c in r["payTo"][2:]))
-                                    or (len(r["payTo"]) in (43, 44) and not r["payTo"].startswith("not-"))
-                                )
-                                for r in parsed_challenge["paymentRequirements"]
+                                for r in (parsed_challenge.get("accepts") or parsed_challenge.get("paymentRequirements") or [])
                             )
                         )
                     )
