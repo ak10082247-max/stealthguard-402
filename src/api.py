@@ -1170,15 +1170,82 @@ async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict
                 BASE_USDC = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
                 SOLANA_USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 
-                FLEET_ROUTE_MAX_AMOUNTS = {
-                    "/v1/sanitize": 20_000,
-                    "/api/v1/sanitize": 20_000,
-                    "/v1/stealth_scrape_and_sanitize": 20_000,
-                    "/v1/polymarket_alpha_divergence": 20_000,
-                    "/v1/scan": 20_000,
-                    "/api/v1/scan": 20_000,
-                    "/toll/smart_router": 10_000,
-                    "/toll/arbitrage_scan": 10_000,
+                # Complete canonical registry of exact registered route terms across all 4 fleet services
+                FLEET_REGISTERED_OFFERS: Dict[Tuple[str, str], int] = {
+                    # canaryguard-402.onrender.com (34 routes)
+                    ("canaryguard-402.onrender.com", "/v1/sanitize"): 10_000,
+                    ("canaryguard-402.onrender.com", "/api/v1/sanitize"): 10_000,
+                    ("canaryguard-402.onrender.com", "/v1/base/token"): 10_000,
+                    ("canaryguard-402.onrender.com", "/v1/wallet-analysis"): 10_000,
+                    ("canaryguard-402.onrender.com", "/v1/contract-info"): 10_000,
+                    ("canaryguard-402.onrender.com", "/v1/wallet-sanctions-check"): 10_000,
+                    ("canaryguard-402.onrender.com", "/v1/uniswap-pool-state"): 10_000,
+                    ("canaryguard-402.onrender.com", "/v1/crypto-price-onchain"): 10_000,
+                    ("canaryguard-402.onrender.com", "/v1/json-repair-and-sanitize"): 10_000,
+                    ("canaryguard-402.onrender.com", "/v1/url-agent-readiness"): 10_000,
+                    ("canaryguard-402.onrender.com", "/v1/tx-status-base"): 10_000,
+                    ("canaryguard-402.onrender.com", "/v1/polymarket-odds-pulse"): 10_000,
+                    ("canaryguard-402.onrender.com", "/v1/defi-yields-safe"): 10_000,
+                    ("canaryguard-402.onrender.com", "/v1/llm-token-pricing"): 10_000,
+                    ("canaryguard-402.onrender.com", "/v1/eip712-signature-audit"): 10_000,
+                    ("canaryguard-402.onrender.com", "/v1/mcp-tool-auditor"): 10_000,
+                    ("canaryguard-402.onrender.com", "/api/v1/token-screener"): 10_000,
+                    ("canaryguard-402.onrender.com", "/api/v1/smart-money/netflow"): 10_000,
+                    ("canaryguard-402.onrender.com", "/api/v1/smart-money/dex-trades"): 10_000,
+                    ("canaryguard-402.onrender.com", "/api/v1/tgm/who-bought-sold"): 10_000,
+                    ("canaryguard-402.onrender.com", "/api/v1/tgm/holders"): 10_000,
+                    ("canaryguard-402.onrender.com", "/api/v1/profiler/address/current-balance"): 10_000,
+                    ("canaryguard-402.onrender.com", "/v1/security/wallet-drainer-check"): 20_000,
+                    ("canaryguard-402.onrender.com", "/v1/security/mcp-tool-poisoning-audit"): 20_000,
+                    ("canaryguard-402.onrender.com", "/v1/security/agent-memory-guard"): 20_000,
+                    ("canaryguard-402.onrender.com", "/v1/security/phishing-url-inspector"): 20_000,
+                    ("canaryguard-402.onrender.com", "/v1/security/smart-contract-honeypot-check"): 20_000,
+                    ("canaryguard-402.onrender.com", "/v1/security/eip712-signature-auditor"): 20_000,
+                    ("canaryguard-402.onrender.com", "/v1/alpha/safe-base-trending"): 20_000,
+                    ("canaryguard-402.onrender.com", "/v1/alpha/polymarket-verified-odds"): 20_000,
+                    ("canaryguard-402.onrender.com", "/v1/risk/full_audit"): 20_000,
+                    ("canaryguard-402.onrender.com", "/v1/verify/agent-attestation"): 20_000,
+                    ("canaryguard-402.onrender.com", "/v1/ondemand/market-snapshot"): 20_000,
+                    ("canaryguard-402.onrender.com", "/v1/tokens/history-and-spread"): 20_000,
+                    ("canaryguard-402.onrender.com", "/v1/yield/safe-allocation"): 20_000,
+
+                    # stealthguard-402.onrender.com (15 routes)
+                    ("stealthguard-402.onrender.com", "/v1/stealth_scrape_and_sanitize"): 15_000,
+                    ("stealthguard-402.onrender.com", "/v1/polymarket_alpha_divergence"): 20_000,
+                    ("stealthguard-402.onrender.com", "/v1/pre_trade_agent_gate"): 10_000,
+                    ("stealthguard-402.onrender.com", "/v1/alpha/polymarket-top-whales"): 10_000,
+                    ("stealthguard-402.onrender.com", "/v1/alpha/polymarket-crypto-odds"): 10_000,
+                    ("stealthguard-402.onrender.com", "/v1/alpha/base-trending-tokens"): 10_000,
+                    ("stealthguard-402.onrender.com", "/v1/alpha/defi-yield-radar"): 10_000,
+                    ("stealthguard-402.onrender.com", "/v1/alpha/hackernews-ai-digest"): 10_000,
+                    ("stealthguard-402.onrender.com", "/v1/security/prompt-firewall"): 10_000,
+                    ("stealthguard-402.onrender.com", "/v1/security/x402-endpoint-verifier"): 10_000,
+                    ("stealthguard-402.onrender.com", "/v1/research/deep-web-dossier"): 20_000,
+                    ("stealthguard-402.onrender.com", "/v1/oracle/perp-funding-and-basis"): 20_000,
+                    ("stealthguard-402.onrender.com", "/v1/alpha/polymarket-whale-orderflow"): 20_000,
+                    ("stealthguard-402.onrender.com", "/v1/security/attestation-bundle"): 20_000,
+                    ("stealthguard-402.onrender.com", "/v1/research/topic-news-scanner"): 20_000,
+
+                    # rugshield-402.onrender.com (12 routes)
+                    ("rugshield-402.onrender.com", "/v1/scan"): 10_000,
+                    ("rugshield-402.onrender.com", "/api/v1/scan"): 10_000,
+                    ("rugshield-402.onrender.com", "/v1/audit/liquidity-lock-verify"): 20_000,
+                    ("rugshield-402.onrender.com", "/v1/audit/holder-cluster-map"): 20_000,
+                    ("rugshield-402.onrender.com", "/v1/audit/swap-simulation-proof"): 20_000,
+                    ("rugshield-402.onrender.com", "/v1/audit/cross-chain-bridge-risk"): 20_000,
+                    ("rugshield-402.onrender.com", "/v1/risk/institutional-token-report"): 20_000,
+                    ("rugshield-402.onrender.com", "/api/v1/token-screener"): 10_000,
+                    ("rugshield-402.onrender.com", "/api/v1/smart-money/netflow"): 10_000,
+                    ("rugshield-402.onrender.com", "/api/v1/smart-money/dex-trades"): 10_000,
+                    ("rugshield-402.onrender.com", "/api/v1/tgm/who-bought-sold"): 10_000,
+                    ("rugshield-402.onrender.com", "/api/v1/tgm/holders"): 10_000,
+                    ("rugshield-402.onrender.com", "/api/v1/profiler/address/current-balance"): 10_000,
+
+                    # x402-agent-tollbooth.onrender.com (4 routes)
+                    ("x402-agent-tollbooth.onrender.com", "/toll/ai_intel"): 1_000,
+                    ("x402-agent-tollbooth.onrender.com", "/toll/arbitrage_scan"): 2_000,
+                    ("x402-agent-tollbooth.onrender.com", "/toll/smart_router"): 1_000,
+                    ("x402-agent-tollbooth.onrender.com", "/api/audit"): 20_000,
                 }
 
                 accepts_list = parsed_challenge.get("accepts") or parsed_challenge.get("paymentRequirements") or []
@@ -1195,10 +1262,14 @@ async def execute_paid_tool(tool_name: str, request: Request, default_args: Dict
                     pay_to = str(alt.get("payTo", ""))
                     amt_raw = alt.get("amount") if alt.get("amount") is not None else alt.get("maxAmount")
                     ep_path = parsed_ep.path.rstrip("/") if parsed_ep else ""
-                    max_allowed_amt = FLEET_ROUTE_MAX_AMOUNTS.get(ep_path, 25_000)
+                    route_key = (ep_host, ep_path)
+                    if route_key not in FLEET_REGISTERED_OFFERS:
+                        # Unregistered route on fleet host cannot be certified settlement-safe
+                        return False
+                    expected_exact_amt = FLEET_REGISTERED_OFFERS[route_key]
                     try:
-                        amt_num = float(amt_raw)
-                        if amt_num <= 0 or amt_num > max_allowed_amt:
+                        amt_num = int(float(amt_raw))
+                        if amt_num != expected_exact_amt:
                             return False
                     except (ValueError, TypeError):
                         return False
