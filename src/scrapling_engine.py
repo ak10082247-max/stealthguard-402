@@ -5,6 +5,8 @@ import re
 from typing import Dict, Any, Optional, Tuple
 from bs4 import BeautifulSoup
 from .sanitizer import sanitize_content
+from .public_url import require_public_url, fetch_pinned
+from urllib.parse import urljoin
 
 logger = logging.getLogger("stealthguard.scrapling")
 
@@ -71,45 +73,55 @@ async def stealth_scrape_and_sanitize(
     loop = asyncio.get_event_loop()
 
     def _sync_fetch() -> Tuple[str, str, int, str]:
-        try:
-            from scrapling.fetchers import Fetcher, StealthyFetcher
+        from scrapling.fetchers import StealthyFetcher
+        from markdownify import markdownify
+        require_public_url(url)
 
-            if render_js:
+        def setup_page(page):
+            # The browser gets content through the same pinned transport as HTTP.
+            # It never resolves the hostname again after the public-address check.
+            def guard(route):
                 try:
-                    # StealthyFetcher with Patchright / Playwright
-                    res = StealthyFetcher.fetch(url, headless=True, timeout=20000)
-                    m = res.markdown() if callable(getattr(res, 'markdown', None)) else res.text
-                    return res.html_content, m, res.status, "scrapling_stealthy_patchright"
-                except Exception as e:
-                    logger.warning(f"StealthyFetcher failed or browser not ready, falling back to Fetcher: {e}")
+                    request = route.request
+                    response = fetch_pinned(request.url, method=request.method,
+                                            headers=request.all_headers(), body=request.post_data_buffer)
+                    route.fulfill(status=response["status"], headers=response["headers"], body=response["body"])
+                except Exception:
+                    route.abort()
+            page.context.route("**/*", guard)
+            page.context.route_web_socket("**/*", lambda socket: socket.close())
+            page.context.add_init_script("Object.defineProperty(window, 'RTCPeerConnection', {value: undefined}); Object.defineProperty(window, 'webkitRTCPeerConnection', {value: undefined}); Object.defineProperty(window, 'WebTransport', {value: undefined});")
 
-            # Standard fast Scrapling fetcher (curl-cffi impersonation)
-            res = Fetcher.get(url, headers=STEALTH_HEADERS, timeout=15)
-            # Check for Cloudflare challenge markers
-            is_cf_challenge = (
-                res.status in (403, 503) or
-                "Just a moment..." in res.html_content or
-                "cf-browser-verification" in res.html_content
-            )
-            if is_cf_challenge and not render_js:
-                try:
-                    from scrapling.fetchers import StealthyFetcher
-                    res_stealth = StealthyFetcher.fetch(url, headless=True, timeout=20000)
-                    m = res_stealth.markdown() if callable(getattr(res_stealth, 'markdown', None)) else res_stealth.text
-                    return res_stealth.html_content, m, res_stealth.status, "scrapling_stealthy_challenge_bypassed"
-                except Exception as stealth_err:
-                    logger.warning(f"Stealthy challenge bypass fallback failed: {stealth_err}")
+        if render_js:
+            # A requested browser run must really use a browser; no silent static fallback.
+            res = StealthyFetcher.fetch(url, headless=True, timeout=20000,
+                                        page_setup=setup_page, google_search=False,
+                                        extra_flags=["--disable-quic", "--disable-background-networking"],
+                                        additional_args={"service_workers": "block", "ignore_https_errors": False})
+            html = res.html_content
+            if not isinstance(html, str) or not html.strip():
+                raise RuntimeError("Browser returned no extractable DOM")
+            return html, markdownify(html), res.status, "scrapling_stealthy_browser"
 
-            m = res.markdown() if callable(getattr(res, 'markdown', None)) else res.text
-            return res.html_content, m, res.status, "scrapling_fetcher"
-        except Exception as err:
-            logger.warning(f"Scrapling fetch error: {err}, falling back to direct httpx")
-            import httpx
-            with httpx.Client(follow_redirects=True, headers=STEALTH_HEADERS, timeout=15.0) as client:
-                resp = client.get(url)
-                from markdownify import markdownify
-                md = markdownify(resp.text)
-                return resp.text, md, resp.status_code, "httpx_stealth_fallback"
+        current_url = url
+        for _ in range(6):
+            require_public_url(current_url)
+            res = fetch_pinned(current_url, headers=STEALTH_HEADERS)
+            if res["status"] in (301, 302, 303, 307, 308):
+                location = res["headers"].get("location") or res["headers"].get("Location")
+                if not location:
+                    raise RuntimeError("Target returned a redirect without a location")
+                current_url = urljoin(current_url, location)
+                continue
+            html = res["body"].decode("utf-8", errors="replace")
+            if not isinstance(html, str) or not html.strip():
+                raise RuntimeError("Target returned no extractable content")
+            if len(html.encode("utf-8")) > 2_000_000:
+                raise RuntimeError("Target content exceeds extraction size limit")
+            if res["status"] in (403, 503) or "cf-browser-verification" in html or "Just a moment..." in html:
+                raise RuntimeError("Target denied access or returned an anti-bot challenge; no content extracted")
+            return html, markdownify(html), res["status"], "curl_cffi_pinned"
+        raise RuntimeError("Target exceeded the redirect limit")
 
     html_content, markdown_content, status_code, fetch_method = await loop.run_in_executor(None, _sync_fetch)
 

@@ -22,9 +22,9 @@ async def test_api_favicon_and_openapi_contact():
         assert spec["info"]["contact"]["email"] == "ak10082247@gmail.com"
         assert spec["info"]["contact"]["name"] == "AK Kurox"
 
-        # Exactly 10 clean paid endpoints in paths (zero non-paid plumbing routes)
+        # Exactly 15 paid endpoints in paths (zero non-paid plumbing routes)
         paths = spec["paths"]
-        assert len(paths) == 10
+        assert len(paths) == 15
         for path, item in paths.items():
             assert path.startswith("/v1/")
             for method, op in item.items():
@@ -39,7 +39,7 @@ async def test_api_health_and_stats():
         r_health = await client.get("/health")
         assert r_health.status_code == 200
         assert r_health.json()["status"] == "ok"
-        assert r_health.json()["cache_warmer"] == "ACTIVE_SUB_50MS"
+        assert r_health.json()["cache_warmer"] == "DISABLED_PROVIDERS_ON_DEMAND"
 
         r_stats = await client.get("/stats")
         assert r_stats.status_code == 200
@@ -53,7 +53,7 @@ async def test_api_x402_manifest_and_discovery():
         assert r_manifest.status_code == 200
         data = r_manifest.json()
         assert data["x402Version"] == 2
-        assert len(data["endpoints"]) == 10
+        assert len(data["endpoints"]) == 15
         assert "bazaar" in data["endpoints"][0]["extensions"]
 
         # Check agent-card endpoint
@@ -68,35 +68,35 @@ async def test_api_unpaid_endpoints_return_402_both_get_and_post():
         r_scrape_post = await client.post("/v1/stealth_scrape_and_sanitize", json={"url": "https://example.com"})
         assert r_scrape_post.status_code == 402
         assert "PAYMENT-REQUIRED" in r_scrape_post.headers
-        assert r_scrape_post.headers["X-402-Amount"] == "0.005"
+        assert r_scrape_post.headers["X-402-Amount"] == "0.015"
         assert "WWW-Authenticate" in r_scrape_post.headers
 
         # GET Scrape
         r_scrape_get = await client.get("/v1/stealth_scrape_and_sanitize?url=https://example.com")
         assert r_scrape_get.status_code == 402
         assert "PAYMENT-REQUIRED" in r_scrape_get.headers
-        assert r_scrape_get.headers["X-402-Amount"] == "0.005"
+        assert r_scrape_get.headers["X-402-Amount"] == "0.015"
 
         # POST Polymarket
         r_poly = await client.post("/v1/polymarket_alpha_divergence", json={"limit": 5})
         assert r_poly.status_code == 402
         assert "PAYMENT-REQUIRED" in r_poly.headers
-        assert r_poly.headers["X-402-Amount"] == "0.005"
+        assert r_poly.headers["X-402-Amount"] == "0.02"
 
         # GET Pre-trade gate
         r_gate = await client.get("/v1/pre_trade_agent_gate")
         assert r_gate.status_code == 402
         assert "PAYMENT-REQUIRED" in r_gate.headers
-        assert r_gate.headers["X-402-Amount"] == "0.003"
+        assert r_gate.headers["X-402-Amount"] == "0.01"
 
         # GET Micro-endpoints
         r_whales = await client.get("/v1/alpha/polymarket-top-whales")
         assert r_whales.status_code == 402
-        assert r_whales.headers["X-402-Amount"] == "0.003"
+        assert r_whales.headers["X-402-Amount"] == "0.01"
 
         r_firewall = await client.get("/v1/security/prompt-firewall")
         assert r_firewall.status_code == 402
-        assert r_firewall.headers["X-402-Amount"] == "0.001"
+        assert r_firewall.headers["X-402-Amount"] == "0.01"
 
 @pytest.mark.asyncio
 async def test_api_mcp_streamable_http():
@@ -104,7 +104,7 @@ async def test_api_mcp_streamable_http():
         # initialize
         r_init = await client.post("/mcp", json={"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}})
         assert r_init.status_code == 200
-        assert r_init.json()["result"]["serverInfo"]["name"] == "StealthGuard-402"
+        assert r_init.json()["result"]["serverInfo"]["name"] == "stealthguard-402"
 
         # tools/list
         r_tools = await client.post("/mcp", json={"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}})
@@ -113,7 +113,7 @@ async def test_api_mcp_streamable_http():
         assert len(tools) >= 10
 
 @pytest.mark.asyncio
-async def test_sub_50ms_cache_warmer_latency():
+async def test_magic_test_signatures_cannot_unlock_paid_feeds():
     import time, secrets
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
         def make_auth():
@@ -135,11 +135,7 @@ async def test_sub_50ms_cache_warmer_latency():
         # Warm up ASGI transport and endpoint
         await client.get("/health")
         await client.get("/v1/alpha/polymarket-top-whales", headers={"PAYMENT-SIGNATURE": json.dumps(make_auth())})
-        start = time.time()
         r = await client.get("/v1/alpha/polymarket-top-whales", headers={"PAYMENT-SIGNATURE": json.dumps(make_auth())})
-        duration_ms = (time.time() - start) * 1000
-        assert r.status_code == 200
-        assert duration_ms < 100.0  # Guarantees sub-100ms response for Lumière PayCheck A+ (target <50ms in prod)
-        assert "PAYMENT-RESPONSE" in r.headers
-        assert r.json()["status"] == "success"
-        assert len(r.json()["recommended_actions"]) >= 2
+        assert r.status_code == 402
+        assert "PAYMENT-RESPONSE" not in r.headers
+        assert r.json()["error"] == "payment_required"

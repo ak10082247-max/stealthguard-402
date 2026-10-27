@@ -12,3 +12,15 @@ htmlcov/
 .vscode/
 packages/*/node_modules/
 tests/
+.env
+.env.*
+*.env
+**/cdp_api_key*.json
+state/
+storage/
+deliveries.jsonl
+*.sqlite*
+**/.env
+**/.env.*
+**/*.env
+**/node_modules/

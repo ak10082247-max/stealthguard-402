@@ -5,6 +5,7 @@ WORKDIR /usr/src/app
 # Install Python packages
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
+RUN python -m patchright install --with-deps chromium
 
 # Copy application source
 COPY . .

@@ -1,6 +1,7 @@
 import json
 import os
 import time
+import hashlib
 from datetime import datetime
 from typing import Dict, Any, List
 
@@ -47,8 +48,8 @@ def record_delivery(
 
     payer_info = decode_payer_from_header(raw_payment_header)
     resolved_payer = payer_info["payer"]
-    resolved_amount = payer_info["amount"] if status_code == 200 else 0.0
-    settled = bool(status_code == 200 and raw_payment_header)
+    resolved_amount = 0.0
+    settled = False
 
     if payment_response_header:
         try:
@@ -59,20 +60,21 @@ def record_delivery(
             data_resp = json.loads(cleaned_resp)
             if "payer" in data_resp:
                 resolved_payer = str(data_resp["payer"]).lower()
-            if "amount" in data_resp:
+            if data_resp.get("success") is True and data_resp.get("network") in ("eip155:8453", "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp") and data_resp.get("transaction"):
                 resolved_amount = float(data_resp["amount"]) / 1e6
-            if data_resp.get("success") is True:
                 settled = True
         except Exception:
             pass
 
     req_input_str = "{}"
     try:
-        req_input_str = json.dumps(request_input)[:500]
+        req_input_str = json.dumps(request_input, sort_keys=True, separators=(",", ":"))
     except Exception:
         req_input_str = str(request_input)[:500]
 
-    resp_preview_str = (response_preview or "")[:300]
+    # Telemetry must not publish or log customer prompts, extracted pages or signed authorizations.
+    request_digest = hashlib.sha256(req_input_str.encode()).hexdigest()
+    resp_preview_str = hashlib.sha256((response_preview or "").encode()).hexdigest()
 
     record = {
         "timestamp_utc": datetime.utcnow().isoformat() + "Z",
@@ -84,10 +86,10 @@ def record_delivery(
         "user_agent": user_agent or "none",
         "client_ip": client_ip or "unknown",
         "referer": referer or "direct",
-        "request_input": request_input,
+        "request_input_sha256": request_digest,
         "http_status": status_code,
         "latency_ms": round(latency_ms, 2),
-        "response_preview": resp_preview_str
+        "response_preview_sha256": resp_preview_str
     }
 
     # Emit structured JSON log to stdout for Render log tailing
@@ -100,15 +102,16 @@ def record_delivery(
         "settled": settled,
         "payer": resolved_payer,
         "amountUsdc": resolved_amount,
-        "requestInput": req_input_str,
-        "responsePreview": resp_preview_str
+        "requestInputSha256": request_digest,
+        "responsePreviewSha256": resp_preview_str
     }), flush=True)
 
     _MEMORY_STORE.insert(0, record)
     if len(_MEMORY_STORE) > MAX_MEMORY_RECORDS:
         _MEMORY_STORE.pop()
 
-    if settled:
+    if settled and not any(r.get("transaction") == data_resp.get("transaction") for r in _PAID_MEMORY_STORE):
+        record["transaction"] = data_resp["transaction"]
         _PAID_MEMORY_STORE.insert(0, record)
         if len(_PAID_MEMORY_STORE) > MAX_MEMORY_RECORDS:
             _PAID_MEMORY_STORE.pop()

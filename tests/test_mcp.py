@@ -14,7 +14,7 @@ async def test_mcp_initialize():
     assert resp["jsonrpc"] == "2.0"
     assert resp["id"] == 1
     assert "serverInfo" in resp["result"]
-    assert resp["result"]["serverInfo"]["name"] == "StealthGuard-402"
+    assert resp["result"]["serverInfo"]["name"] == "stealthguard-402"
     assert "capabilities" in resp["result"]
 
 @pytest.mark.asyncio
@@ -27,12 +27,12 @@ async def test_mcp_tools_list_glama_tdqs():
     }
     resp, pay_hdr = await handle_mcp_request(req)
     tools = resp["result"]["tools"]
-    assert len(tools) >= 19
+    assert len(tools) == 15
     tool_names = [t["name"] for t in tools]
     assert "stealth_scrape_and_sanitize" in tool_names
     assert "polymarket_alpha_divergence" in tool_names
     assert "pre_trade_agent_gate" in tool_names
-    assert "health_and_sample" in tool_names
+    assert "health_and_sample" not in tool_names  # Free discovery remains callable, outside paid-tool inventory.
 
     # Check Glama TDQS requirements
     for tool in tools:
@@ -74,8 +74,7 @@ async def test_mcp_tools_call_unpaid_returns_402():
         }
     }
     resp, pay_hdr = await handle_mcp_request(req)
-    assert resp["isError"] is True
-    assert resp["error"]["code"] == 402
-    assert resp["error"]["message"] == "payment_required"
-    assert "_meta" in resp
-    assert "x402/payment-required" in resp["_meta"]
+    assert resp["result"]["isError"] is True
+    assert resp["result"]["_meta"]["http_status"] == 402
+    assert "x402/payment-required" in resp["result"]["_meta"]
+    assert pay_hdr is None

@@ -21,8 +21,8 @@ def test_build_402_challenge_headers_and_body():
     assert headers["X-402-Version"] == "2"
     assert headers["X-402-Network"] == "base"
     assert headers["X-402-Chain-Id"] == "8453"
-    assert headers["X-402-Amount"] == "0.005"
-    assert headers["X-402-Amount-Units"] == "5000"
+    assert headers["X-402-Amount"] == "0.015"
+    assert headers["X-402-Amount-Units"] == "15000"
     assert headers["X-402-Asset"].lower() == ASSET.lower()
     assert headers["X-402-Payment-To"].lower() == get_recipient_address().lower()
     assert "PAYMENT-REQUIRED" in headers
@@ -55,12 +55,12 @@ def test_build_402_challenge_headers_and_body():
     assert len(decoded["resource"]["description"]) <= 450
 
     # accepts[0] must not have a raw string "resource"
-    assert len(decoded["accepts"]) == 1
+    assert len(decoded["accepts"]) == 2
     accept = decoded["accepts"][0]
     assert accept["scheme"] == "exact"
     assert accept["network"] == NETWORK
     assert accept["asset"].lower() == ASSET.lower()
-    assert accept["amount"] == "5000"
+    assert accept["amount"] == "15000"
     assert accept["payTo"].lower() == get_recipient_address().lower()
     assert "bazaar" in decoded["extensions"]
 
@@ -75,11 +75,11 @@ def test_unpaid_verification_returns_402():
     assert status == 402
     assert "Missing" in err
 
-def test_valid_eip712_payment_verification_and_replay_protection():
+def test_valid_eip712_payment_verification_and_replay_protection(monkeypatch):
     REPLAY_CACHE.clear()
     payer = Account.create()
     recipient = get_recipient_address()
-    amount = 5000
+    amount = 15000
     now = int(time.time())
 
     types = {
@@ -147,6 +147,10 @@ def test_valid_eip712_payment_verification_and_replay_protection():
 
     raw_header = json.dumps(payment_payload)
 
+    # Public ephemeral test signature; settlement acknowledgement is isolated from the network.
+    monkeypatch.setattr("src.x402_middleware.settle_via_cdp_facilitator",
+        lambda *a, **kw: (True, {"success": True, "payer": payer.address,
+                                "transaction": "0x" + "12"*32, "network": NETWORK}, None))
     # 1. First execution: should succeed and verify
     is_valid, pay_info, err, status = verify_x402_payment(raw_header, "stealth_scrape_and_sanitize")
     assert is_valid is True
@@ -154,7 +158,7 @@ def test_valid_eip712_payment_verification_and_replay_protection():
     assert pay_info is not None
     assert pay_info["success"] is True
     assert pay_info["payer"].lower() == payer.address.lower()
-    assert pay_info["amount"] == "5000"
+    assert pay_info["amount"] == "15000"
 
     # Verify PAYMENT-RESPONSE header generation
     resp_hdr = create_payment_response_header(pay_info)

@@ -13,6 +13,47 @@ from eth_account import Account
 from eth_account.messages import encode_typed_data
 import httpx
 import jwt
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+
+
+_BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
+
+def _base58(raw):
+    number = int.from_bytes(raw, "big")
+    encoded = ""
+    while number:
+        number, remainder = divmod(number, 58)
+        encoded = _BASE58[remainder] + encoded
+    return "1" * (len(raw)-len(raw.lstrip(b"\0"))) + encoded
+
+
+def _solana_buyer(serialized):
+    if serialized[0] != 2 or len(serialized) <= 166:
+        raise ValueError("Expected the advertised two-signer sponsored transaction")
+    message = serialized[129:]
+    if message[0] != 0x80 or message[1] != 2:
+        raise ValueError("Expected a two-signer Solana v0 message")
+    offset, count, shift = 4, 0, 0
+    while True:
+        if offset >= len(message) or shift > 14:
+            raise ValueError("Invalid Solana account vector")
+        byte = message[offset]
+        offset += 1
+        count |= (byte & 127) << shift
+        if not byte & 128:
+            break
+        shift += 7
+    if count < 2 or count > 64 or len(message) < offset + count*32 + 34:
+        raise ValueError("Invalid Solana account layout")
+    sponsor, buyer = message[offset:offset+32], message[offset+32:offset+64]
+    if _base58(sponsor) != SOLANA_FEE_PAYER:
+        raise ValueError("Unexpected Solana sponsor")
+    try:
+        Ed25519PublicKey.from_public_bytes(buyer).verify(serialized[65:129], message)
+    except Exception as exc:
+        raise ValueError("Invalid Solana buyer signature") from exc
+    return _base58(buyer)
 
 def enforce_https(url: str) -> str:
     """Enforces https:// on URLs in production or hosted on Render."""
@@ -91,53 +132,12 @@ def clean_pem_private_key(raw_key: str) -> str:
     return k
 
 def load_cdp_credentials() -> Tuple[Optional[str], Optional[str]]:
-    """
-    Loads CDP API credentials from environment or known credential files.
-    Handles escaped newlines (\\n) and raw PEM formatting seamlessly.
-    """
+    """Use only explicitly configured credentials; never search neighbors or Downloads."""
     key_id = os.getenv("CDP_API_KEY_NAME") or os.getenv("CDP_API_KEY_ID")
-    key_secret = os.getenv("CDP_API_KEY_PRIVATE_KEY") or os.getenv("CDP_API_KEY_SECRET")
-    
-    if key_id and key_secret:
-        clean_id = key_id.strip().strip('"').strip("'")
-        clean_secret = clean_pem_private_key(key_secret)
-        return clean_id, clean_secret
+    secret = os.getenv("CDP_API_KEY_PRIVATE_KEY") or os.getenv("CDP_API_KEY_SECRET")
+    return (key_id.strip().strip('"').strip("'") if key_id else None,
+            clean_pem_private_key(secret) if secret else None)
 
-    candidate_files = [
-        os.path.join(os.getcwd(), "RENDER_ENV_VARS_TO_PASTE.env"),
-        os.path.expanduser(r"C:\Users\AK\Downloads\cdp_api_key (1).json"),
-        os.path.expanduser(r"C:\Users\AK\Downloads\cdp_api_key.json"),
-        os.path.join(os.path.dirname(__file__), "..", "..", "canaryguard-402", ".env"),
-        os.path.join(os.path.dirname(__file__), "..", ".env"),
-        "cdp_api_key.json",
-    ]
-    for cpath in candidate_files:
-        if os.path.exists(cpath):
-            try:
-                if cpath.endswith(".json"):
-                    with open(cpath, "r", encoding="utf-8") as f:
-                        data = json.load(f)
-                    if "name" in data and "privateKey" in data:
-                        key_id = data["name"].strip()
-                        key_secret = data["privateKey"].strip().replace("\\n", "\n")
-                        os.environ["CDP_API_KEY_NAME"] = key_id
-                        os.environ["CDP_API_KEY_PRIVATE_KEY"] = key_secret
-                        return key_id, key_secret
-                elif cpath.endswith(".env"):
-                    with open(cpath, "r", encoding="utf-8") as f:
-                        for line in f:
-                            line = line.strip()
-                            if line.startswith("CDP_API_KEY_NAME=") or line.startswith("CDP_API_KEY_ID="):
-                                key_id = line.split("=", 1)[1].strip().strip('"').strip("'")
-                            elif line.startswith("CDP_API_KEY_PRIVATE_KEY=") or line.startswith("CDP_API_KEY_SECRET="):
-                                key_secret = line.split("=", 1)[1].strip().strip('"').strip("'").replace("\\n", "\n")
-                    if key_id and key_secret:
-                        os.environ["CDP_API_KEY_NAME"] = key_id
-                        os.environ["CDP_API_KEY_PRIVATE_KEY"] = key_secret
-                        return key_id, key_secret
-            except Exception as e:
-                logger.debug(f"Failed loading candidate CDP key file {cpath}: {e}")
-    return key_id, key_secret
 
 def generate_cdp_jwt(key_id: str, private_key: str, method: str, host: str, path: str) -> str:
     """Generates an ES256-signed JWT for Coinbase CDP Facilitator authentication."""
@@ -168,7 +168,7 @@ def verify_via_cdp_facilitator(
     """Calls POST /platform/v2/x402/verify on Coinbase CDP Facilitator."""
     key_id, key_secret = load_cdp_credentials()
     if not key_id or not key_secret:
-        return True, {"verified": True, "offline": True}, None  # Fallback to local EIP-712 check
+        return False, None, "CDP verification credentials are not configured"
 
     host = "api.cdp.coinbase.com"
     path = f"{COINBASE_FACILITATOR_V2_ROUTE}/verify"
@@ -201,34 +201,36 @@ def verify_via_cdp_facilitator(
                 return False, None, str(err)
     except Exception as e:
         logger.warning(f"CDP verify error: {e}")
-        return True, {"offline_fallback": True}, None
+        return False, None, "CDP verification is unavailable"
 
-def _settle_via_relay(
+def _settle_via_payai_facilitator(
     payment_payload: Dict[str, Any],
     payment_requirements: Dict[str, Any]
 ) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
-    """Relays settlement through CanaryGuard-402's verified CDP Facilitator relay."""
+    """Settle directly through PayAI; no dependency on another merchant endpoint."""
     try:
-        relay_url = "https://canaryguard-402.onrender.com/v1/internal/cdp-settle"
+        relay_url = f"{PAYAI_FACILITATOR_URL}/settle"
         with httpx.Client(timeout=35.0) as client:
             r = client.post(
                 relay_url,
-                json={"paymentPayload": payment_payload, "paymentRequirements": payment_requirements},
+                json={"x402Version": 2, "paymentPayload": payment_payload, "paymentRequirements": payment_requirements},
             )
             try:
                 res_data = r.json()
             except Exception:
                 res_data = {"error": r.text}
-            if r.status_code == 200 and res_data.get("success"):
+            if r.status_code == 200 and res_data.get("success") is True:
                 logger.info(
                     f"CDP Relay settled successfully on-chain! "
                     f"tx={res_data.get('transaction')} payer={res_data.get('payer')}"
                 )
                 return True, res_data, None
             err = res_data.get("errorReason") or res_data.get("errorMessage") or res_data.get("error") or f"Relay HTTP {r.status_code}"
+            if r.status_code >= 500 or r.status_code == 200 or res_data.get("transaction"):
+                return False, res_data, f"SETTLEMENT_UNKNOWN: {err}"
             return False, None, str(err)
     except Exception as e:
-        return False, None, f"CDP settlement relay exception: {e}"
+        return False, None, f"SETTLEMENT_UNKNOWN: CDP settlement relay exception: {type(e).__name__}"
 
 def settle_via_cdp_facilitator(
     payment_payload: Dict[str, Any],
@@ -237,11 +239,11 @@ def settle_via_cdp_facilitator(
     """
     Submits an EIP-3009 transfer authorization to the Coinbase CDP Facilitator /settle
     endpoint to broadcast on-chain on Base Mainnet (eip155:8453).
-    Automatically falls back to CanaryGuard's CDP relay if local PEM/JWT fails.
+    Use PayAI when CDP credentials/JWT are unavailable before any settlement submission.
     """
     key_id, key_secret = load_cdp_credentials()
     if not key_id or not key_secret:
-        return _settle_via_relay(payment_payload, payment_requirements)
+        return _settle_via_payai_facilitator(payment_payload, payment_requirements)
 
     host = "api.cdp.coinbase.com"
     path = f"{COINBASE_FACILITATOR_V2_ROUTE}/settle"
@@ -249,6 +251,9 @@ def settle_via_cdp_facilitator(
 
     try:
         token = generate_cdp_jwt(key_id, key_secret, "POST", host, path)
+    except Exception:
+        return _settle_via_payai_facilitator(payment_payload, payment_requirements)
+    try:
         headers = {
             "Authorization": f"Bearer {token}",
             "Correlation-Context": f"sdk_version={CDP_SDK_VERSION},sdk_language=python,source=x402,source_version={X402_SDK_VERSION}",
@@ -267,7 +272,7 @@ def settle_via_cdp_facilitator(
             except Exception:
                 res_data = {"error": resp.text}
 
-            if resp.status_code == 200 and res_data.get("success"):
+            if resp.status_code == 200 and res_data.get("success") is True:
                 ext_resp = resp.headers.get("EXTENSION-RESPONSES")
                 if ext_resp:
                     try:
@@ -282,11 +287,14 @@ def settle_via_cdp_facilitator(
                 )
                 return True, res_data, None
             else:
-                logger.warning(f"Local CDP settle HTTP {resp.status_code}, falling back to relay...")
-                return _settle_via_relay(payment_payload, payment_requirements)
+                # A timeout, malformed response or server error may follow a broadcast.
+                # Never submit that authorization to a second settler automatically.
+                err = res_data.get("errorReason") or res_data.get("errorMessage") or f"HTTP {resp.status_code}"
+                if resp.status_code >= 500 or resp.status_code == 200 or res_data.get("transaction"):
+                    return False, res_data, f"SETTLEMENT_UNKNOWN: {err}"
+                return False, None, str(err)
     except Exception as e:
-        logger.warning(f"Local CDP JWT/settle exception ({e}), falling back to relay...")
-        return _settle_via_relay(payment_payload, payment_requirements)
+        return False, None, f"SETTLEMENT_UNKNOWN: CDP settlement exception: {type(e).__name__}"
 
 def build_bazaar_extension(
     tool_name: str,
@@ -582,309 +590,262 @@ def build_402_challenge(
     return headers, body
 
 
-def verify_x402_payment(
-    raw_header: Optional[str],
-    tool_name: str,
-    resource_url: Optional[str] = None,
-) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str], int]:
-    """
-    Verifies an incoming payment authorization against Base USDC or Solana USDC terms.
-    Returns: (is_valid, payment_info_or_response, error_message, status_code)
-    """
-    if not raw_header:
-        return False, None, "Missing PAYMENT-SIGNATURE or X-PAYMENT header", 402
 
-    clean_replay_cache()
-    pricing = TOOL_PRICING.get(tool_name, TOOL_PRICING["stealth_scrape_and_sanitize"])
-    required_units = int(pricing["amount_microunits"])
-    pay_to = get_recipient_address().lower()
-    raw_res_url = resource_url or f"{get_public_url()}{pricing.get('path', '')}"
-    res_url = enforce_https(raw_res_url)
-    desc = pricing.get("description", "")[:440]
-    discovery = build_bazaar_extension(tool_name, desc, mode="http")
-
-    # Free tool bypass
-    if required_units == 0:
-        return True, {"payer": "free", "amount": "0", "transaction": "free_sample", "resource": res_url}, None, 200
-
-    payload_str = raw_header.strip()
-    if not payload_str.startswith("{"):
+def _payment_envelope(raw_header: str, tool_name: str, resource_url: Optional[str] = None, *, validate_time=True):
+    """Validate the client's authorization against server-owned terms, without settling."""
+    if tool_name not in TOOL_PRICING:
+        raise ValueError("Unknown paid tool")
+    if not isinstance(raw_header, str) or not raw_header.strip():
+        raise ValueError("Missing PAYMENT-SIGNATURE or X-PAYMENT header")
+    if len(raw_header) > 65536:
+        raise ValueError("Payment header is too large")
+    raw = raw_header.strip()
+    if not raw.startswith("{"):
         try:
-            payload_str = base64.b64decode(payload_str).decode("utf-8")
-        except Exception:
-            pass
+            raw = base64.b64decode(raw, validate=True).decode("utf-8")
+        except Exception as exc:
+            raise ValueError("Malformed base64 payment header") from exc
+    parsed = json.loads(raw)
+    if not isinstance(parsed, dict) or parsed.get("x402Version") != 2 or isinstance(parsed.get("x402Version"), bool):
+        raise ValueError("Expected an x402 version 2 payment object")
+    payload = parsed.get("payload")
+    if not isinstance(payload, dict):
+        raise ValueError("Missing payment payload object")
+    accepted = parsed.get("accepted")
+    if accepted is not None and not isinstance(accepted, dict):
+        raise ValueError("accepted must be an object")
+    resource = enforce_https(resource_url or f"{get_public_url()}{TOOL_PRICING[tool_name]['path']}")
+    supplied_resource = parsed.get("resource")
+    if supplied_resource is not None and (
+        not isinstance(supplied_resource, dict) or supplied_resource.get("url") != resource
+    ):
+        raise ValueError("Payment resource does not match the requested resource")
+    network = (accepted or {}).get("network") or parsed.get("network") or (
+        SOLANA_NETWORK if payload.get("transaction") else NETWORK
+    )
+    if network not in (NETWORK, SOLANA_NETWORK):
+        raise ValueError("Unsupported payment network")
+    amount = str(TOOL_PRICING[tool_name]["amount_microunits"])
+    is_solana = network == SOLANA_NETWORK
+    requirements = {
+        "scheme": "exact", "network": network, "amount": amount,
+        "asset": SOLANA_USDC_MINT if is_solana else ASSET,
+        "payTo": get_solana_recipient_address() if is_solana else get_recipient_address(),
+        "maxTimeoutSeconds": 300,
+        "extra": {"name": "USD Coin (Solana)" if is_solana else "USD Coin", "version": "2"},
+    }
+    if is_solana:
+        requirements["extra"]["feePayer"] = SOLANA_FEE_PAYER
+    if accepted:
+        for field in ("scheme", "network", "amount", "asset", "payTo", "maxTimeoutSeconds"):
+            given, expected = accepted.get(field), requirements[field]
+            if field in ("asset", "payTo") and not is_solana and isinstance(given, str):
+                matches = given.lower() == expected.lower()
+            else:
+                matches = type(given) is type(expected) and given == expected
+            if not matches:
+                raise ValueError(f"Accepted payment {field} differs from the advertised quote")
+        extras = accepted.get("extra")
+        if not isinstance(extras, dict) or any(extras.get(k) != v for k, v in requirements["extra"].items()):
+            raise ValueError("Accepted payment extra differs from the advertised quote")
+    payer = None
+    if is_solana:
+        transaction = payload.get("transaction")
+        if not isinstance(transaction, str) or not transaction:
+            raise ValueError("Missing Solana serialized transaction")
+        try:
+            serialized = base64.b64decode(transaction, validate=True)
+        except Exception as exc:
+            raise ValueError("Invalid Solana transaction encoding") from exc
+        if not 64 <= len(serialized) <= 1232:
+            raise ValueError("Invalid Solana transaction length")
+        # Sponsored transactions have two signatures: sponsor then buyer. The
+        # sponsor can fill its slot without changing the buyer's authorization.
+        # Bind retries to the buyer signature and exact message, not that mutable slot.
+        payer = _solana_buyer(serialized)
+        identity = "solana:" + hashlib.sha256(serialized[65:]).hexdigest()
+        canonical_payload = {"transaction": transaction}
+    else:
+        auth, signature = payload.get("authorization"), payload.get("signature")
+        if not isinstance(auth, dict) or not isinstance(signature, str):
+            raise ValueError("Missing authorization or signature")
+        if not re.fullmatch(r"0x[0-9a-fA-F]{130}", signature):
+            raise ValueError("Invalid EIP-712 signature encoding")
+        payer, recipient = auth.get("from"), auth.get("to")
+        if not isinstance(payer, str) or not re.fullmatch(r"0x[0-9a-fA-F]{40}", payer):
+            raise ValueError("Invalid payment payer")
+        if not isinstance(recipient, str) or recipient.lower() != get_recipient_address().lower():
+            raise ValueError("Invalid payment recipient")
+        def uint(name):
+            v = auth.get(name)
+            if isinstance(v, bool) or not isinstance(v, (str, int)) or not str(v).isdigit():
+                raise ValueError(f"Invalid authorization {name}")
+            n = int(v)
+            if not 0 <= n < 2**256:
+                raise ValueError(f"Invalid authorization {name}")
+            return n
+        value, after, before = uint("value"), uint("validAfter"), uint("validBefore")
+        now = int(time.time())
+        if value != int(amount):
+            raise ValueError("Payment amount must equal the advertised exact amount")
+        if before <= after or (validate_time and (before <= now or after > now)):
+            raise ValueError("Payment authorization expired or not yet active")
+        nonce = auth.get("nonce")
+        if not isinstance(nonce, str) or not re.fullmatch(r"0x[0-9a-fA-F]{64}", nonce):
+            raise ValueError("Invalid authorization nonce")
+        fields = [
+            {"name": "from", "type": "address"}, {"name": "to", "type": "address"},
+            {"name": "value", "type": "uint256"}, {"name": "validAfter", "type": "uint256"},
+            {"name": "validBefore", "type": "uint256"}, {"name": "nonce", "type": "bytes32"},
+        ]
+        message = {"from": payer, "to": recipient, "value": value, "validAfter": after,
+                   "validBefore": before, "nonce": bytes.fromhex(nonce[2:])}
+        domain = {"name": "USD Coin", "version": "2", "chainId": CHAIN_ID, "verifyingContract": ASSET}
+        # transferWithAuthorization is the facilitator's advertised exact EVM scheme.
+        signable = encode_typed_data(full_message={
+            "types": {"EIP712Domain": [
+                {"name": "name", "type": "string"}, {"name": "version", "type": "string"},
+                {"name": "chainId", "type": "uint256"}, {"name": "verifyingContract", "type": "address"},
+            ], "TransferWithAuthorization": fields},
+            "primaryType": "TransferWithAuthorization", "domain": domain, "message": message,
+        })
+        if Account.recover_message(signable, signature=signature).lower() != payer.lower():
+            raise ValueError("Invalid EIP-712 cryptographic signature")
+        identity = f"{NETWORK}:{ASSET.lower()}:{payer.lower()}:{nonce.lower()}"
+        canonical_payload = {"signature": signature, "authorization": {
+            "from": payer, "to": get_recipient_address(), "value": str(value),
+            "validAfter": str(after), "validBefore": str(before), "nonce": nonce,
+        }}
+    canonical = {
+        "x402Version": 2,
+        "resource": {"url": resource, "description": TOOL_PRICING[tool_name].get("description", "")[:440],
+                     "mimeType": "application/json"},
+        "accepted": requirements, "payload": canonical_payload,
+        "extensions": build_bazaar_extension(tool_name),
+    }
+    return canonical, requirements, identity, payer
 
+
+def verify_x402_authorization(raw_header, tool_name, resource_url):
+    """Read-only facilitator verification before spending provider resources."""
     try:
-        parsed = json.loads(payload_str)
-    except Exception as e:
-        return False, None, f"Malformed JSON in payment header: {e}", 400
+        canonical, requirements, _, payer = _payment_envelope(raw_header, tool_name, resource_url)
+        if requirements["network"] == NETWORK:
+            key_id, secret = load_cdp_credentials()
+            if key_id and secret:
+                try:
+                    token = generate_cdp_jwt(key_id, secret, "POST", "api.cdp.coinbase.com", f"{COINBASE_FACILITATOR_V2_ROUTE}/verify")
+                except Exception:
+                    token = None
+                if token:
+                    url = f"{COINBASE_FACILITATOR_BASE_URL}{COINBASE_FACILITATOR_V2_ROUTE}/verify"
+                    headers = {"Authorization": f"Bearer {token}"}
+                    settler = "cdp"
+                else:
+                    url, headers, settler = f"{PAYAI_FACILITATOR_URL}/verify", {}, "payai"
+            else:
+                url, headers, settler = f"{PAYAI_FACILITATOR_URL}/verify", {}, "payai"
+        else:
+            url, headers, settler = f"{PAYAI_FACILITATOR_URL}/verify", {}, "payai"
+        with httpx.Client(timeout=15) as client:
+            response = client.post(url, headers=headers, json={"x402Version": 2, "paymentPayload": canonical, "paymentRequirements": requirements})
+        data = response.json()
+        if response.status_code >= 500:
+            return False, None, "Payment verification provider is unavailable", 503
+        if response.status_code != 200 or not isinstance(data, dict) or data.get("isValid") is not True:
+            return False, None, "Payment authorization was rejected before fulfillment", 402
+        if data.get("payer") and (data["payer"].lower() != payer.lower() if requirements["network"] == NETWORK else data["payer"] != payer):
+            return False, None, "Facilitator verification payer mismatch", 402
+        return True, settler, None, 200
+    except Exception:
+        return False, None, "Payment verification unavailable; no settlement was submitted", 503
 
-    # Branch 1: Solana Mainnet x402 Settlement via PayAI Facilitator
-    incoming_net = str((parsed.get("accepted") or {}).get("network") or parsed.get("network") or "")
-    tx_b64 = str((parsed.get("payload") or {}).get("transaction") or parsed.get("transaction") or "")
-    if incoming_net.startswith("solana") or tx_b64:
-        if not tx_b64:
-            return False, None, "Missing Solana serialized transaction in payload.transaction", 402
-        sol_hash = hashlib.sha256(tx_b64.encode("utf-8")).hexdigest()
-        if sol_hash in REPLAY_CACHE:
-            return False, None, "Solana payment transaction already consumed.", 409
 
-        solana_req = {
-            "scheme": "exact",
-            "network": SOLANA_NETWORK,
-            "amount": str(required_units),
-            "asset": SOLANA_USDC_MINT,
-            "payTo": get_solana_recipient_address(),
-            "maxTimeoutSeconds": 300,
-            "extra": {"name": "USD Coin (Solana)", "version": "2", "feePayer": SOLANA_FEE_PAYER},
-        }
-        payai_body = {
-            "x402Version": 2,
-            "paymentPayload": {
-                "x402Version": 2,
-                "resource": {"url": res_url, "description": desc, "mimeType": "application/json"},
-                "extensions": parsed.get("extensions") or discovery,
-                "accepted": solana_req,
-                "payload": parsed.get("payload") or {"transaction": tx_b64},
-            },
-            "paymentRequirements": solana_req,
-        }
+def validate_settlement_response(data: Any, requirements: Dict[str, Any], expected_payer=None):
+    """Require a positive settler acknowledgement and real transaction identifier.
+
+    A missing/ambiguous acknowledgement cannot be converted into a successful receipt.
+    Optional amount/payer/network fields must agree with the server's canonical terms.
+    """
+    if not isinstance(data, dict) or data.get("success") is not True:
+        raise ValueError("Settlement acknowledgement is missing success:true")
+    network = requirements["network"]
+    if network not in (NETWORK, SOLANA_NETWORK):
+        raise ValueError("Unsupported settlement network")
+    transaction = data.get("transaction")
+    pattern = r"0x[0-9a-fA-F]{64}" if network == NETWORK else r"[1-9A-HJ-NP-Za-km-z]{80,90}"
+    if not isinstance(transaction, str) or not re.fullmatch(pattern, transaction):
+        raise ValueError("Settlement acknowledgement has no valid transaction identifier")
+    payer = data.get("payer") or expected_payer
+    payer_pattern = r"0x[0-9a-fA-F]{40}" if network == NETWORK else r"[1-9A-HJ-NP-Za-km-z]{32,44}"
+    if not isinstance(payer, str) or not re.fullmatch(payer_pattern, payer):
+        raise ValueError("Settlement acknowledgement has no valid payer")
+    if expected_payer and (payer.lower() != expected_payer.lower() if network == NETWORK else payer != expected_payer):
+        raise ValueError("Settlement payer mismatch")
+    if data.get("network") not in (None, network):
+        raise ValueError("Settlement network mismatch")
+    if "amount" in data and data["amount"] != requirements["amount"]:
+        raise ValueError("Settlement amount mismatch")
+    return payer, transaction
+
+
+def verify_x402_payment(
+    raw_header: Optional[str], tool_name: str, resource_url: Optional[str] = None, *, settle=True, facilitator=None,
+) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str], int]:
+    """Validate exact server-owned terms and settle once, without magic test signatures."""
+    try:
+        canonical, requirements, identity, expected_payer = _payment_envelope(raw_header, tool_name, resource_url)
+    except Exception as exc:
+        return False, None, str(exc), 402
+    if not settle:
+        return True, {"authorization_key": identity, "network": requirements["network"]}, None, 200
+    clean_replay_cache()
+    if identity in REPLAY_CACHE:
+        return False, None, "Payment authorization already consumed. Replay prevented.", 409
+    if requirements["network"] == SOLANA_NETWORK:
         try:
             with httpx.Client(timeout=30.0) as client:
-                r = client.post(f"{PAYAI_FACILITATOR_URL}/settle", json=payai_body)
-                data = r.json() if r.content else {}
-                if r.status_code == 200 and data.get("success"):
-                    REPLAY_CACHE[sol_hash] = time.time() + 86400
-                    return True, {
-                        "success": True,
-                        "payer": data.get("payer") or (parsed.get("payload") or {}).get("payer") or "solana-payer",
-                        "amount": str(required_units),
-                        "transaction": data.get("transaction") or sol_hash,
-                        "network": SOLANA_NETWORK,
-                        "resource": res_url,
-                    }, None, 200
-                err_reason = data.get("errorReason") or data.get("error") or f"PayAI HTTP {r.status_code}"
-                return False, None, f"Solana PayAI settlement rejected: {err_reason}", 402
-        except Exception as sol_exc:
-            return False, None, f"PayAI facilitator exception: {sol_exc}", 402
-
-    # Extract auth and signature fields
-    auth = (
-        parsed.get("payload", {}).get("authorization") or
-        parsed.get("authorization") or
-        parsed.get("message") or
-        parsed
-    )
-    sig = (
-        parsed.get("payload", {}).get("signature") or
-        parsed.get("signature") or
-        ""
-    )
-
-    if not auth or not sig:
-        return False, None, "Missing authorization or signature object", 402
-
-    # Check recipient
-    to_addr = (auth.get("to") or auth.get("payTo") or auth.get("recipient") or "").lower()
-    if to_addr != pay_to:
-        return False, None, f"Invalid payment recipient: must pay {pay_to}, received {to_addr}", 402
-
-    # Check value
-    value = int(auth.get("value") or auth.get("amount") or auth.get("amountUsdc") or 0)
-    if value < required_units:
-        return False, None, f"Insufficient payment: required {required_units} micro-units USDC, received {value}", 402
-
-    # Check timestamps
-    now = int(time.time())
-    valid_after = int(auth.get("validAfter") or 0)
-    valid_before = int(auth.get("validBefore") or auth.get("deadline") or (now + 3600))
-    if valid_before < now - 60:
-        return False, None, "Payment authorization expired", 402
-    if valid_after > now + 300:
-        return False, None, "Payment authorization not yet active", 402
-
-    # Check replay cache
-    sig_hash = hashlib.sha256(sig.encode("utf-8")).hexdigest()
-    if sig_hash in REPLAY_CACHE:
-        return False, None, "Payment authorization already consumed. Replay prevented.", 409
-
-    # Verify EIP-712 Typed Data
-    from_addr = (auth.get("from") or auth.get("payer") or auth.get("agentAddress") or "").lower()
-    nonce = auth.get("nonce") or "0x" + "0" * 64
-    if not nonce.startswith("0x"):
-        nonce = "0x" + nonce.zfill(64)
-    elif len(nonce) < 66:
-        nonce = "0x" + nonce[2:].zfill(64)
-
-    types = {
-        "EIP712Domain": [
-            {"name": "name", "type": "string"},
-            {"name": "version", "type": "string"},
-            {"name": "chainId", "type": "uint256"},
-            {"name": "verifyingContract", "type": "address"},
-        ],
-        "TransferWithAuthorization": [
-            {"name": "from", "type": "address"},
-            {"name": "to", "type": "address"},
-            {"name": "value", "type": "uint256"},
-            {"name": "validAfter", "type": "uint256"},
-            {"name": "validBefore", "type": "uint256"},
-            {"name": "nonce", "type": "bytes32"},
-        ],
-    }
-
-    domain = {
-        "name": "USD Coin",
-        "version": "2",
-        "chainId": CHAIN_ID,
-        "verifyingContract": ASSET,
-    }
-
-    message = {
-        "from": auth.get("from") or from_addr,
-        "to": auth.get("to") or pay_to,
-        "value": value,
-        "validAfter": valid_after,
-        "validBefore": valid_before,
-        "nonce": bytes.fromhex(nonce[2:]),
-    }
-
-    is_valid = False
+                response = client.post(f"{PAYAI_FACILITATOR_URL}/settle", json={
+                    "x402Version": 2, "paymentPayload": canonical, "paymentRequirements": requirements,
+                })
+                data = response.json()
+            if response.status_code != 200:
+                if response.status_code >= 500 or (isinstance(data, dict) and data.get("transaction")):
+                    return False, {"settlement_candidate": data}, "Settlement outcome unknown; reconciliation required", 503
+                return False, None, str(data.get("errorReason") or "Solana settlement rejected"), 402
+            if isinstance(data, dict) and data.get("success") is False and not data.get("transaction"):
+                return False, None, str(data.get("errorReason") or "Solana settlement rejected"), 402
+        except Exception as exc:
+            logger.warning("Solana settlement outcome unknown: %s", type(exc).__name__)
+            return False, None, "Settlement outcome unknown; reconciliation required", 503
+    else:
+        ok, data, error = (_settle_via_payai_facilitator(canonical, requirements) if facilitator == "payai"
+                           else settle_via_cdp_facilitator(canonical, requirements))
+        if not ok:
+            unknown = "SETTLEMENT_UNKNOWN" in str(error)
+            return False, {"settlement_candidate": data} if unknown and data else None, error or "Settlement rejected", 503 if unknown else 402
     try:
-        structured_data = {
-            "types": types,
-            "primaryType": "TransferWithAuthorization",
-            "domain": domain,
-            "message": message,
-        }
-        signable = encode_typed_data(full_message=structured_data)
-        recovered = Account.recover_message(signable, signature=sig)
-        if recovered.lower() == from_addr:
-            is_valid = True
-    except Exception:
-        # Check ReceiveWithAuthorization
-        try:
-            recv_types = {
-                "EIP712Domain": types["EIP712Domain"],
-                "ReceiveWithAuthorization": types["TransferWithAuthorization"],
-            }
-            recv_data = {
-                "types": recv_types,
-                "primaryType": "ReceiveWithAuthorization",
-                "domain": domain,
-                "message": message,
-            }
-            signable_recv = encode_typed_data(full_message=recv_data)
-            recovered_recv = Account.recover_message(signable_recv, signature=sig)
-            if recovered_recv.lower() == from_addr:
-                is_valid = True
-        except Exception:
-            is_valid = False
-
-    # Check testing mode
-    is_testing = (
-        os.getenv("TESTING") == "1" or
-        sig.startswith("0x11") or
-        sig.startswith("0xaa") or
-        "test" in sig or
-        "0x1111111111111111111111111111111111111111" in from_addr
-    )
-
-    if not is_valid and is_testing:
-        is_valid = True
-        from_addr = from_addr or "0x1111111111111111111111111111111111111111"
-
-    if not is_valid:
-        return False, None, "Invalid EIP-712 cryptographic signature", 402
-
-    if is_testing:
-        # Deterministic mock verification in test mode
-        REPLAY_CACHE[sig_hash] = time.time() + 86400
-        tx_hash = "0x" + hashlib.sha256(f"{sig_hash}_{time.time()}".encode()).hexdigest()
-        payment_info = {
-            "success": True,
-            "payer": from_addr,
-            "transaction": tx_hash,
-            "amount": str(value),
-            "network": NETWORK,
-            "resource": res_url,
-        }
-        return True, payment_info, None, 200
-
-    # Production on-chain settlement via Coinbase CDP Facilitator
-    pay_to_checksum = get_recipient_address()
-    resource_obj = parsed.get("resource") if isinstance(parsed.get("resource"), dict) else {
-        "url": res_url,
-        "description": desc,
-        "mimeType": "application/json",
+        payer, transaction = validate_settlement_response(data, requirements, expected_payer)
+    except ValueError as exc:
+        logger.warning("Settlement acknowledgement invalid: %s", exc)
+        return False, {"settlement_candidate": data}, "Settlement outcome unknown; reconciliation required", 503
+    REPLAY_CACHE[identity] = time.time() + 86400
+    info = {
+        "success": True, "payer": payer, "transaction": transaction,
+        "amount": requirements["amount"], "network": requirements["network"],
+        "resource": canonical["resource"]["url"],
     }
-    default_requirements = {
-        "scheme": "exact",
-        "network": NETWORK,
-        "amount": str(required_units),
-        "asset": ASSET,
-        "payTo": pay_to_checksum,
-        "maxTimeoutSeconds": 300,
-        "extra": {
-            "name": "USD Coin",
-            "version": "2",
-        },
-    }
-    client_accepted = parsed.get("accepted") if isinstance(parsed.get("accepted"), dict) else None
-    payment_requirements = {
-        "scheme": client_accepted.get("scheme", "exact") if client_accepted else "exact",
-        "network": client_accepted.get("network", NETWORK) if client_accepted else NETWORK,
-        "amount": str(client_accepted.get("amount", str(required_units))) if client_accepted else str(required_units),
-        "asset": client_accepted.get("asset", ASSET) if client_accepted else ASSET,
-        "payTo": pay_to_checksum,
-        "maxTimeoutSeconds": int(client_accepted.get("maxTimeoutSeconds", 300)) if client_accepted else 300,
-        "extra": client_accepted.get("extra", {"name": "USD Coin", "version": "2"}) if client_accepted else {"name": "USD Coin", "version": "2"},
-    }
+    return True, info, None, 200
 
-    v2_payment_payload = {
-        "x402Version": 2,
-        "resource": resource_obj,
-        "extensions": parsed.get("extensions") or discovery,
-        "accepted": payment_requirements,
-        "payload": {
-            "signature": sig,
-            "authorization": {
-                "from": auth.get("from") or from_addr,
-                "to": auth.get("to") or pay_to_checksum,
-                "value": str(value),
-                "validAfter": str(valid_after),
-                "validBefore": str(valid_before),
-                "nonce": nonce,
-            },
-        },
-    }
-
-    settle_ok, settle_data, settle_err = settle_via_cdp_facilitator(
-        payment_payload=v2_payment_payload,
-        payment_requirements=payment_requirements,
-    )
-
-    if not settle_ok or not settle_data:
-        logger.warning(f"On-chain settlement rejected: {settle_err}")
-        return False, None, f"On-chain payment settlement rejected: {settle_err}", 402
-
-    # Mark consumed in replay cache (24 hours TTL)
-    REPLAY_CACHE[sig_hash] = time.time() + 86400
-    tx_hash = settle_data.get("transaction") or ("0x" + hashlib.sha256(f"{sig_hash}_{time.time()}".encode()).hexdigest())
-
-    payment_info = {
-        "success": True,
-        "payer": settle_data.get("payer") or from_addr,
-        "transaction": tx_hash,
-        "amount": str(value),
-        "network": settle_data.get("network") or NETWORK,
-        "resource": res_url,
-    }
-    if "extension_responses" in settle_data:
-        payment_info["extension_responses"] = settle_data["extension_responses"]
-
-    return True, payment_info, None, 200
 
 def create_payment_response_header(payment_info: Dict[str, Any]) -> str:
-    """Encodes PAYMENT-RESPONSE header in base64."""
-    return base64.b64encode(json.dumps(payment_info).encode("utf-8")).decode("utf-8")
+    """Only successful, complete settlement receipts may be serialized."""
+    network = payment_info.get("network")
+    if not isinstance(payment_info.get("amount"), str) or not payment_info["amount"].isdigit() or int(payment_info["amount"]) <= 0:
+        raise ValueError("Settlement receipt amount is missing or invalid")
+    validate_settlement_response(payment_info, {
+        "network": network, "amount": payment_info.get("amount"),
+    })
+    if not isinstance(payment_info.get("resource"), str) or not payment_info["resource"]:
+        raise ValueError("Settlement receipt resource is missing")
+    return base64.b64encode(json.dumps(payment_info, separators=(",", ":")).encode("utf-8")).decode("utf-8")

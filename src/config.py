@@ -392,12 +392,12 @@ TOOL_PRICING: Dict[str, Dict[str, Any]] = {
         "description": "Deep CLOB orderbook imbalance, smart-money wallet tracking, and Limitless/Polymarket cross-venue arbitrage spread matrix.",
         "path": "/v1/alpha/polymarket-whale-orderflow",
         "category": "alpha",
-        "example_input": {"min_order_usd": 10000, "include_cross_venue": True},
+        "example_input": {"min_order_usd": 10000, "include_cross_venue": False},
         "input_schema": {
             "type": "object",
             "properties": {
                 "min_order_usd": {"type": "number", "default": 10000, "description": "Minimum order size in USD to track"},
-                "include_cross_venue": {"type": "boolean", "default": True, "description": "Include cross-venue arbitrage matrix"},
+                "include_cross_venue": {"type": "boolean", "default": False, "description": "Include cross-venue arbitrage matrix"},
             },
         },
         "example_output": {
