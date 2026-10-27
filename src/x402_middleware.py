@@ -489,7 +489,7 @@ def build_402_challenge(
         "extensions": discovery,
     }
 
-    challenge_json = json.dumps(challenge_payload)
+    challenge_json = json.dumps(challenge_payload, separators=(",", ":"))
     challenge_b64 = base64.b64encode(challenge_json.encode("utf-8")).decode("utf-8")
 
     www_auth = build_ietf_mpp_www_authenticate(amount_units, pay_to)
@@ -505,7 +505,7 @@ def build_402_challenge(
         "X-402-Chain-Id": str(CHAIN_ID),
         "PAYMENT-REQUIRED": challenge_b64,
         "X-Payment-Required": challenge_b64,
-        "X-402-Payment-Required": challenge_b64,
+
         "Access-Control-Expose-Headers": (
             "PAYMENT-REQUIRED, PAYMENT-RESPONSE, WWW-Authenticate, Payment-Receipt, "
             "X-PAYMENT, PAYMENT-SIGNATURE, X-402-Version, "
