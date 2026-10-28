@@ -120,7 +120,7 @@ TOOL_INPUT_SCHEMAS: Dict[str, Dict[str, Any]] = {
         "type": "object",
         "properties": {
             "min_order_usd": {"type": "number", "default": 10000, "description": "Minimum transaction or limit-order threshold in USD to filter institutional whale trades (defaults to 10000)."},
-            "include_cross_venue": {"type": "boolean", "default": False, "description": "Whether to calculate cross-venue arbitrage matrix between Polymarket, Binance, and Coinbase spot."},
+            "include_cross_venue": {"type": "boolean", "default": False, "description": "Compare mapped Limitless/Polymarket outcome books after checking oracle, opening threshold and UTC window; return depth and venue-fee spread estimates without executing trades."},
         },
     },
     "security_attestation_bundle": {

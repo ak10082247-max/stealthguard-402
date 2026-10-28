@@ -591,8 +591,11 @@ def build_402_challenge(
 
 
 
-def _payment_envelope(raw_header: str, tool_name: str, resource_url: Optional[str] = None, *, validate_time=True):
+def _payment_envelope(raw_header: str, tool_name: str, resource_url: Optional[str] = None, *, validate_time=True, retired_merchant=False):
     """Validate the client's authorization against server-owned terms, without settling."""
+    # Used solely to authenticate access to an already retained legacy result.
+    # All verify/settle callers use the current recipient (the default).
+    from .config import RETIRED_RECIPIENT, RETIRED_SOLANA_RECIPIENT
     if tool_name not in TOOL_PRICING:
         raise ValueError("Unknown paid tool")
     if not isinstance(raw_header, str) or not raw_header.strip():
@@ -627,10 +630,11 @@ def _payment_envelope(raw_header: str, tool_name: str, resource_url: Optional[st
         raise ValueError("Unsupported payment network")
     amount = str(TOOL_PRICING[tool_name]["amount_microunits"])
     is_solana = network == SOLANA_NETWORK
+    recipient = (RETIRED_SOLANA_RECIPIENT if is_solana else RETIRED_RECIPIENT) if retired_merchant else (get_solana_recipient_address() if is_solana else get_recipient_address())
     requirements = {
         "scheme": "exact", "network": network, "amount": amount,
         "asset": SOLANA_USDC_MINT if is_solana else ASSET,
-        "payTo": get_solana_recipient_address() if is_solana else get_recipient_address(),
+        "payTo": recipient,
         "maxTimeoutSeconds": 300,
         "extra": {"name": "USD Coin (Solana)" if is_solana else "USD Coin", "version": "2"},
     }
@@ -671,10 +675,10 @@ def _payment_envelope(raw_header: str, tool_name: str, resource_url: Optional[st
             raise ValueError("Missing authorization or signature")
         if not re.fullmatch(r"0x[0-9a-fA-F]{130}", signature):
             raise ValueError("Invalid EIP-712 signature encoding")
-        payer, recipient = auth.get("from"), auth.get("to")
+        payer, authorized_recipient = auth.get("from"), auth.get("to")
         if not isinstance(payer, str) or not re.fullmatch(r"0x[0-9a-fA-F]{40}", payer):
             raise ValueError("Invalid payment payer")
-        if not isinstance(recipient, str) or recipient.lower() != get_recipient_address().lower():
+        if not isinstance(authorized_recipient, str) or authorized_recipient.lower() != recipient.lower():
             raise ValueError("Invalid payment recipient")
         def uint(name):
             v = auth.get(name)
@@ -698,7 +702,7 @@ def _payment_envelope(raw_header: str, tool_name: str, resource_url: Optional[st
             {"name": "value", "type": "uint256"}, {"name": "validAfter", "type": "uint256"},
             {"name": "validBefore", "type": "uint256"}, {"name": "nonce", "type": "bytes32"},
         ]
-        message = {"from": payer, "to": recipient, "value": value, "validAfter": after,
+        message = {"from": payer, "to": authorized_recipient, "value": value, "validAfter": after,
                    "validBefore": before, "nonce": bytes.fromhex(nonce[2:])}
         domain = {"name": "USD Coin", "version": "2", "chainId": CHAIN_ID, "verifyingContract": ASSET}
         # transferWithAuthorization is the facilitator's advertised exact EVM scheme.
@@ -713,7 +717,7 @@ def _payment_envelope(raw_header: str, tool_name: str, resource_url: Optional[st
             raise ValueError("Invalid EIP-712 cryptographic signature")
         identity = f"{NETWORK}:{ASSET.lower()}:{payer.lower()}:{nonce.lower()}"
         canonical_payload = {"signature": signature, "authorization": {
-            "from": payer, "to": get_recipient_address(), "value": str(value),
+            "from": payer, "to": recipient, "value": str(value),
             "validAfter": str(after), "validBefore": str(before), "nonce": nonce,
         }}
     canonical = {

@@ -1,0 +1,1199 @@
+{
+  "observed_at": 1793193161.985404,
+  "limitless": {
+    "id": 446317,
+    "automationType": "lumy",
+    "conditionId": "0x3a2f9efd2c7ab13d00d1634fdc53bbc6660bf2dc3092ca28ede60bc899b555cf",
+    "negRiskRequestId": null,
+    "description": "<p>This market will resolve to &quot;Up&quot; if the close price is greater than or equal to the open price for the BTC/USDT 1 hour candle that begins on the time and date specified in the title. Otherwise, this market will resolve to &quot;Down&quot;.</p><p><br></p><p>The resolution source for this market is information from Binance, specifically the BTC/USDT pair (<a href=\"https://www.binance.com/en/trade/BTC_USDT\" target=\"_blank\" rel=\"noopener noreferrer\">https://www.binance.com/en/trade/BTC_USDT</a>). The close \u00c2\u00ab C \u00c2\u00bb and open \u00c2\u00ab O \u00c2\u00bb displayed at the top of the graph for the relevant &quot;1H&quot; candle will be used once the data for that candle is finalized.</p><p><br></p><p>Please note that this market is about the price according to Binance BTC/USDT, not according to other exchanges or trading pairs.</p>",
+    "groupId": null,
+    "collateralToken": {
+      "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "decimals": 6,
+      "symbol": "USDC"
+    },
+    "title": "BTC Up or Down Hourly",
+    "proxyTitle": null,
+    "expirationDate": "Oct 28, 2026",
+    "expirationTimestamp": 1793196000000,
+    "createdAt": "2026-10-28T13:00:06.321Z",
+    "startAt": "2026-10-28T13:00:00.000Z",
+    "updatedAt": "2026-10-28T13:06:11.168Z",
+    "categories": [
+      "Crypto",
+      "Hourly"
+    ],
+    "status": "FUNDED",
+    "expired": false,
+    "hidden": false,
+    "creator": {
+      "name": "Limitless",
+      "username": "Limitless",
+      "imageURI": "https://limitless.exchange/assets/images/logo.svg",
+      "link": "https://x.com/trylimitless",
+      "address": "0x60e61631d9a585797cDee9f79FafDecf3bd7F64D"
+    },
+    "tags": [
+      "Lumy",
+      "Pareto"
+    ],
+    "volume": "5881773",
+    "volumeFormatted": "5.881773",
+    "tokens": {
+      "yes": "72514008349413655972707168323264088839019818301220710328781473776193239631159",
+      "no": "49898080033112732039830871529406697179237317281699696498977607492087501775773"
+    },
+    "prices": [
+      0.5005,
+      0.4995
+    ],
+    "tradePrices": {
+      "buy": {
+        "market": [
+          0.506,
+          0.505
+        ],
+        "limit": [
+          0.495,
+          0.494
+        ]
+      },
+      "sell": {
+        "market": [
+          0.495,
+          0.494
+        ],
+        "limit": [
+          0.506,
+          0.505
+        ]
+      }
+    },
+    "isOther": false,
+    "isRewardable": true,
+    "slug": "btc-up-or-down-hourly-p-1793181910147",
+    "stableSlug": "btc-hourly-price",
+    "tradeType": "clob",
+    "venue": {
+      "exchange": "0x05c748E2f4DcDe0ec9Fa8DDc40DE6b867f923fa5",
+      "adapter": null,
+      "feeModule": "0x7B6ffe5bA8B5ec7afB0AaBaE629D12dA5bC62565",
+      "feeModuleType": "COLLATERAL"
+    },
+    "marketType": "single",
+    "priorityIndex": 0,
+    "properties": [
+      {
+        "propertyKeySlug": "domain",
+        "value": [
+          "crypto"
+        ]
+      },
+      {
+        "propertyKeySlug": "duration",
+        "value": [
+          "hourly"
+        ]
+      },
+      {
+        "propertyKeySlug": "ticker",
+        "value": [
+          "btc"
+        ]
+      }
+    ],
+    "winningOutcomeIndex": null,
+    "metadata": {
+      "fee": true,
+      "chart": {
+        "candle": "hourly",
+        "market": "spot",
+        "source": "binance",
+        "symbol": "BTCUSDT",
+        "windowOpenAt": "2026-10-28T13:00:00.000Z"
+      },
+      "openPrice": "80749.77",
+      "isBannered": false,
+      "externalSlug": "bitcoin-up-or-down-october-28-2026-9am-et",
+      "isPolyArbitrage": true,
+      "externalProvider": "polymarket",
+      "externalRulesWatch": {
+        "rulesHash": "f12af1f9136f0a8ef4a0afebfb494b99bc896b80d07fe508a2d42e8e2c7c0f73",
+        "clarificationIds": []
+      },
+      "polymarketSeriesId": 10114,
+      "openPriceCapturedAt": "2026-10-28T13:00:00.000Z",
+      "orderbookSources": {
+        "predict": {
+          "status": "matched"
+        }
+      }
+    },
+    "settings": {
+      "minSize": "100000000",
+      "maxSpread": 0.035,
+      "dailyReward": "0",
+      "effectiveDailyReward": "0",
+      "currentRewardsMultiplier": 1,
+      "rewardsEpoch": "0",
+      "c": "3",
+      "rebateRate": "1",
+      "takerDelayMs": 500,
+      "creatorFeePct": 0
+    },
+    "imageUrl": "https://cdn.limitless.exchange/price-oracles/57/1546e81a-9e31-4292-b36c-b54e9443e4b1.svg",
+    "logo": "https://cdn.limitless.exchange/price-oracles/57/1546e81a-9e31-4292-b36c-b54e9443e4b1.svg",
+    "priceOracleMetadata": {
+      "ticker": "BTCUSDT",
+      "assetType": "CRYPTO",
+      "pythAddress": null,
+      "chartSource": "binance",
+      "chainlinkFeedId": null,
+      "chainlinkFeedAddress": null,
+      "chainlinkPair": null,
+      "chainlinkStreamUrl": null,
+      "symbol": "BTC",
+      "name": "BTC"
+    }
+  },
+  "polymarket": {
+    "id": "6250969",
+    "question": "Bitcoin Up or Down - October 28, 9AM ET",
+    "conditionId": "0xc2ec760b7393c2f0485f87c45eb964835430fdd9062f5ccb41536bdace8abef0",
+    "slug": "bitcoin-up-or-down-october-28-2026-9am-et",
+    "resolutionSource": "https://www.binance.com/en/trade/BTC_USDT",
+    "endDate": "2026-10-28T14:00:00Z",
+    "liquidity": "8002.0721",
+    "startDate": "2026-10-26T13:00:08Z",
+    "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
+    "icon": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
+    "description": "This market will resolve to \"Up\" if the close price is greater than or equal to the open price for the BTC/USDT 1 hour candle that begins on the time and date specified in the title. Otherwise, this market will resolve to \"Down\".\n\nThe resolution source for this market is information from Binance, specifically the BTC/USDT pair (https://www.binance.com/en/trade/BTC_USDT). The close \u00c2\u00ab C \u00c2\u00bb and open \u00c2\u00ab O \u00c2\u00bb displayed at the top of the graph for the relevant \"1H\" candle will be used once the data for that candle is finalized.\n\nPlease note that this market is about the price according to Binance BTC/USDT, not according to other exchanges or trading pairs.",
+    "outcomes": "[\"Up\", \"Down\"]",
+    "outcomePrices": "[\"0.505\", \"0.495\"]",
+    "volume": "1051.994392",
+    "active": true,
+    "closed": false,
+    "marketMakerAddress": "",
+    "createdAt": "2026-10-26T13:00:00.552313Z",
+    "updatedAt": "2026-10-28T13:10:35.806198Z",
+    "new": false,
+    "featured": false,
+    "submitted_by": "0xAC9930b2AE455a671b62dE86876A7e8587825294",
+    "archived": false,
+    "resolvedBy": "0x65070BE91477460D8A7AeEb94ef92fe056C2f2A7",
+    "restricted": true,
+    "questionID": "0x9144db6fa984fe9dc92f40933ea4a674be1fea5304c89983403b57ffe62764ec",
+    "enableOrderBook": true,
+    "orderPriceMinTickSize": 0.01,
+    "orderMinSize": 5,
+    "volumeNum": 1051.994392,
+    "liquidityNum": 8002.0721,
+    "endDateIso": "2026-10-28",
+    "startDateIso": "2026-10-26",
+    "hasReviewedDates": true,
+    "volume24hr": 6358.949806999999,
+    "volume1wk": 6358.949806999999,
+    "volume1mo": 6358.949806999999,
+    "volume1yr": 6358.949806999999,
+    "clobTokenIds": "[\"30788426209450820816368614033285672982012558023214362350368404625864987327420\", \"101214045441785481425800788174627019721763773272871571661967253661998655108194\"]",
+    "comboStatus": "disabled",
+    "umaBond": "250",
+    "umaReward": "0.6",
+    "volume24hrClob": 6358.949806999999,
+    "volume1wkClob": 6358.949806999999,
+    "volume1moClob": 6358.949806999999,
+    "volume1yrClob": 6358.949806999999,
+    "volumeClob": 1051.994392,
+    "liquidityClob": 8002.0721,
+    "makerBaseFee": 1000,
+    "takerBaseFee": 1000,
+    "customLiveness": 600,
+    "acceptingOrders": true,
+    "negRisk": false,
+    "events": [
+      {
+        "id": "1259120",
+        "ticker": "bitcoin-up-or-down-october-28-2026-9am-et",
+        "slug": "bitcoin-up-or-down-october-28-2026-9am-et",
+        "title": "Bitcoin Up or Down - October 28, 9AM ET",
+        "description": "This market will resolve to \"Up\" if the close price is greater than or equal to the open price for the BTC/USDT 1 hour candle that begins on the time and date specified in the title. Otherwise, this market will resolve to \"Down\".\n\nThe resolution source for this market is information from Binance, specifically the BTC/USDT pair (https://www.binance.com/en/trade/BTC_USDT). The close \u00c2\u00ab C \u00c2\u00bb and open \u00c2\u00ab O \u00c2\u00bb displayed at the top of the graph for the relevant \"1H\" candle will be used once the data for that candle is finalized.\n\nPlease note that this market is about the price according to Binance BTC/USDT, not according to other exchanges or trading pairs.",
+        "resolutionSource": "https://www.binance.com/en/trade/BTC_USDT",
+        "startDate": "2026-10-26T13:00:08Z",
+        "creationDate": "2026-10-26T13:00:52.023268Z",
+        "endDate": "2026-10-28T14:00:00Z",
+        "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
+        "icon": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
+        "active": true,
+        "closed": false,
+        "archived": false,
+        "new": false,
+        "featured": false,
+        "restricted": true,
+        "liquidity": 8845.4121,
+        "volume": 1051.994392,
+        "openInterest": 9412.308021,
+        "createdAt": "2026-10-26T13:00:00.412567Z",
+        "updatedAt": "2026-10-28T13:10:48.734246Z",
+        "competitive": 0.9997750506136119,
+        "volume24hr": 6358.949806999999,
+        "volume1wk": 6358.949806999999,
+        "volume1mo": 6358.949806999999,
+        "volume1yr": 6358.949806999999,
+        "enableOrderBook": true,
+        "liquidityClob": 8845.4121,
+        "negRisk": false,
+        "commentCount": 0,
+        "series": [
+          {
+            "id": "10114",
+            "ticker": "btc-up-or-down-hourly",
+            "slug": "btc-up-or-down-hourly",
+            "title": "BTC Up or Down Hourly",
+            "seriesType": "single",
+            "recurrence": "hourly",
+            "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
+            "icon": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
+            "active": true,
+            "closed": false,
+            "archived": false,
+            "featured": false,
+            "restricted": true,
+            "createdAt": "2025-05-27T12:19:33.928117Z",
+            "updatedAt": "2026-10-28T13:11:05.467229Z",
+            "volume24hr": 494157.04493499995,
+            "volume": 23853.496758999998,
+            "liquidity": 291771.11309,
+            "commentCount": 14621
+          }
+        ],
+        "cyom": false,
+        "showAllOutcomes": true,
+        "showMarketImages": false,
+        "enableNegRisk": false,
+        "automaticallyActive": true,
+        "seriesSlug": "btc-up-or-down-hourly",
+        "negRiskAugmented": false,
+        "pendingDeployment": false,
+        "deploying": false,
+        "eventMetadata": {
+          "priceToBeat": 80749.77
+        },
+        "version": "v1"
+      }
+    ],
+    "ready": false,
+    "funded": false,
+    "acceptingOrdersTimestamp": "2026-10-26T13:00:08Z",
+    "cyom": false,
+    "competitive": 0.9999750006249843,
+    "approved": true,
+    "rewardsMinSize": 50,
+    "rewardsMaxSpread": 4.5,
+    "spread": 0.01,
+    "oneDayPriceChange": 0.005,
+    "oneHourPriceChange": 0.01,
+    "lastTradePrice": 0.56,
+    "bestBid": 0.5,
+    "bestAsk": 0.51,
+    "automaticallyActive": true,
+    "clearBookOnStart": true,
+    "manualActivation": false,
+    "negRiskOther": false,
+    "umaResolutionStatuses": "[]",
+    "pendingDeployment": false,
+    "deploying": false,
+    "deployingTimestamp": "2026-10-26T13:00:00.945206Z",
+    "rfqEnabled": false,
+    "eventStartTime": "2026-10-28T13:00:00Z",
+    "holdingRewardsEnabled": false,
+    "feesEnabled": true,
+    "feeType": "crypto_fees_v2",
+    "feeSchedule": {
+      "exponent": 1,
+      "rate": 0.07,
+      "takerOnly": true,
+      "rebateRate": 0.2
+    },
+    "fallbackResolutionType": "equal_split",
+    "version": "v1"
+  },
+  "limitless_book": {
+    "bids": [
+      {
+        "price": 0.495,
+        "size": 5000000,
+        "side": "BUY"
+      },
+      {
+        "price": 0.49,
+        "size": 20000000,
+        "side": "BUY"
+      },
+      {
+        "price": 0.474,
+        "size": 101000000,
+        "side": "BUY"
+      },
+      {
+        "price": 0.473,
+        "size": 500000000,
+        "side": "BUY"
+      },
+      {
+        "price": 0.472,
+        "size": 90000000,
+        "side": "BUY"
+      },
+      {
+        "price": 0.45,
+        "size": 2000000,
+        "side": "BUY"
+      },
+      {
+        "price": 0.435,
+        "size": 25000000,
+        "side": "BUY"
+      },
+      {
+        "price": 0.42,
+        "size": 5000000,
+        "side": "BUY"
+      },
+      {
+        "price": 0.369,
+        "size": 2710000,
+        "side": "BUY"
+      },
+      {
+        "price": 0.32,
+        "size": 40000000,
+        "side": "BUY"
+      },
+      {
+        "price": 0.1,
+        "size": 200000000,
+        "side": "BUY"
+      },
+      {
+        "price": 0.031,
+        "size": 200000000,
+        "side": "BUY"
+      },
+      {
+        "price": 0.011,
+        "size": 300000000,
+        "side": "BUY"
+      },
+      {
+        "price": 0.009,
+        "size": 111111000,
+        "side": "BUY"
+      },
+      {
+        "price": 0.005,
+        "size": 500000000,
+        "side": "BUY"
+      },
+      {
+        "price": 0.001,
+        "size": 30000000,
+        "side": "BUY"
+      }
+    ],
+    "asks": [
+      {
+        "price": 0.51,
+        "size": 5000000,
+        "side": "SELL"
+      },
+      {
+        "price": 0.511,
+        "size": 5000000,
+        "side": "SELL"
+      },
+      {
+        "price": 0.52,
+        "size": 20000000,
+        "side": "SELL"
+      },
+      {
+        "price": 0.525,
+        "size": 25000000,
+        "side": "SELL"
+      },
+      {
+        "price": 0.537,
+        "size": 100000000,
+        "side": "SELL"
+      },
+      {
+        "price": 0.538,
+        "size": 90000000,
+        "side": "SELL"
+      },
+      {
+        "price": 0.54,
+        "size": 2000000,
+        "side": "SELL"
+      },
+      {
+        "price": 0.543,
+        "size": 500000000,
+        "side": "SELL"
+      },
+      {
+        "price": 0.59,
+        "size": 5000000,
+        "side": "SELL"
+      },
+      {
+        "price": 0.605,
+        "size": 2531000,
+        "side": "SELL"
+      },
+      {
+        "price": 0.619,
+        "size": 1000000,
+        "side": "SELL"
+      },
+      {
+        "price": 0.64,
+        "size": 40000000,
+        "side": "SELL"
+      },
+      {
+        "price": 0.88,
+        "size": 166666000,
+        "side": "SELL"
+      },
+      {
+        "price": 0.969,
+        "size": 200000000,
+        "side": "SELL"
+      },
+      {
+        "price": 0.989,
+        "size": 300000000,
+        "side": "SELL"
+      },
+      {
+        "price": 0.99,
+        "size": 100000000,
+        "side": "SELL"
+      },
+      {
+        "price": 0.995,
+        "size": 500000000,
+        "side": "SELL"
+      },
+      {
+        "price": 0.999,
+        "size": 30000000,
+        "side": "SELL"
+      }
+    ],
+    "tokenId": "72514008349413655972707168323264088839019818301220710328781473776193239631159",
+    "adjustedMidpoint": 0.5055,
+    "midpoint": 0.5025,
+    "maxSpread": "0.035",
+    "minSize": "100000000",
+    "lastTradePrice": 0.535
+  },
+  "polymarket_up_book": {
+    "market": "0xc2ec760b7393c2f0485f87c45eb964835430fdd9062f5ccb41536bdace8abef0",
+    "asset_id": "30788426209450820816368614033285672982012558023214362350368404625864987327420",
+    "timestamp": "1793193162811",
+    "hash": "33aece140593baf50f5865ef5915e63343a1ce84",
+    "bids": [
+      {
+        "price": "0.01",
+        "size": "14361"
+      },
+      {
+        "price": "0.02",
+        "size": "8506"
+      },
+      {
+        "price": "0.03",
+        "size": "6"
+      },
+      {
+        "price": "0.04",
+        "size": "200"
+      },
+      {
+        "price": "0.05",
+        "size": "40"
+      },
+      {
+        "price": "0.06",
+        "size": "20.83"
+      },
+      {
+        "price": "0.08",
+        "size": "10"
+      },
+      {
+        "price": "0.1",
+        "size": "4000"
+      },
+      {
+        "price": "0.12",
+        "size": "10"
+      },
+      {
+        "price": "0.15",
+        "size": "5.1"
+      },
+      {
+        "price": "0.16",
+        "size": "10"
+      },
+      {
+        "price": "0.19",
+        "size": "15"
+      },
+      {
+        "price": "0.2",
+        "size": "1070"
+      },
+      {
+        "price": "0.24",
+        "size": "10"
+      },
+      {
+        "price": "0.25",
+        "size": "207"
+      },
+      {
+        "price": "0.26",
+        "size": "21.31"
+      },
+      {
+        "price": "0.27",
+        "size": "5"
+      },
+      {
+        "price": "0.28",
+        "size": "39.21"
+      },
+      {
+        "price": "0.29",
+        "size": "28.28"
+      },
+      {
+        "price": "0.3",
+        "size": "44.66"
+      },
+      {
+        "price": "0.31",
+        "size": "82.42"
+      },
+      {
+        "price": "0.32",
+        "size": "67.5"
+      },
+      {
+        "price": "0.33",
+        "size": "50"
+      },
+      {
+        "price": "0.34",
+        "size": "25"
+      },
+      {
+        "price": "0.35",
+        "size": "314"
+      },
+      {
+        "price": "0.36",
+        "size": "156"
+      },
+      {
+        "price": "0.37",
+        "size": "141"
+      },
+      {
+        "price": "0.38",
+        "size": "100"
+      },
+      {
+        "price": "0.39",
+        "size": "80"
+      },
+      {
+        "price": "0.4",
+        "size": "1071.6"
+      },
+      {
+        "price": "0.41",
+        "size": "1333.47"
+      },
+      {
+        "price": "0.42",
+        "size": "312"
+      },
+      {
+        "price": "0.43",
+        "size": "680"
+      },
+      {
+        "price": "0.44",
+        "size": "935"
+      },
+      {
+        "price": "0.45",
+        "size": "888"
+      },
+      {
+        "price": "0.46",
+        "size": "845.31"
+      },
+      {
+        "price": "0.47",
+        "size": "338"
+      },
+      {
+        "price": "0.48",
+        "size": "488"
+      },
+      {
+        "price": "0.49",
+        "size": "1059"
+      },
+      {
+        "price": "0.5",
+        "size": "370"
+      }
+    ],
+    "asks": [
+      {
+        "price": "0.99",
+        "size": "14471"
+      },
+      {
+        "price": "0.98",
+        "size": "8566"
+      },
+      {
+        "price": "0.97",
+        "size": "46"
+      },
+      {
+        "price": "0.96",
+        "size": "30"
+      },
+      {
+        "price": "0.95",
+        "size": "264"
+      },
+      {
+        "price": "0.92",
+        "size": "10"
+      },
+      {
+        "price": "0.9",
+        "size": "2000"
+      },
+      {
+        "price": "0.89",
+        "size": "10"
+      },
+      {
+        "price": "0.88",
+        "size": "10"
+      },
+      {
+        "price": "0.85",
+        "size": "15.1"
+      },
+      {
+        "price": "0.83",
+        "size": "7"
+      },
+      {
+        "price": "0.81",
+        "size": "10"
+      },
+      {
+        "price": "0.8",
+        "size": "1010"
+      },
+      {
+        "price": "0.77",
+        "size": "10"
+      },
+      {
+        "price": "0.75",
+        "size": "197"
+      },
+      {
+        "price": "0.74",
+        "size": "31.31"
+      },
+      {
+        "price": "0.73",
+        "size": "32"
+      },
+      {
+        "price": "0.72",
+        "size": "19.21"
+      },
+      {
+        "price": "0.71",
+        "size": "48.28"
+      },
+      {
+        "price": "0.7",
+        "size": "58"
+      },
+      {
+        "price": "0.69",
+        "size": "67.42"
+      },
+      {
+        "price": "0.68",
+        "size": "72.5"
+      },
+      {
+        "price": "0.67",
+        "size": "735"
+      },
+      {
+        "price": "0.66",
+        "size": "30"
+      },
+      {
+        "price": "0.65",
+        "size": "25"
+      },
+      {
+        "price": "0.64",
+        "size": "75"
+      },
+      {
+        "price": "0.63",
+        "size": "85"
+      },
+      {
+        "price": "0.62",
+        "size": "225"
+      },
+      {
+        "price": "0.61",
+        "size": "75"
+      },
+      {
+        "price": "0.6",
+        "size": "418.6"
+      },
+      {
+        "price": "0.59",
+        "size": "161"
+      },
+      {
+        "price": "0.58",
+        "size": "180"
+      },
+      {
+        "price": "0.57",
+        "size": "525"
+      },
+      {
+        "price": "0.56",
+        "size": "682"
+      },
+      {
+        "price": "0.55",
+        "size": "697"
+      },
+      {
+        "price": "0.54",
+        "size": "356"
+      },
+      {
+        "price": "0.53",
+        "size": "887"
+      },
+      {
+        "price": "0.52",
+        "size": "425"
+      },
+      {
+        "price": "0.51",
+        "size": "75"
+      }
+    ],
+    "min_order_size": "5",
+    "tick_size": "0.01",
+    "neg_risk": false,
+    "last_trade_price": "0.520"
+  },
+  "polymarket_down_book": {
+    "market": "0xc2ec760b7393c2f0485f87c45eb964835430fdd9062f5ccb41536bdace8abef0",
+    "asset_id": "101214045441785481425800788174627019721763773272871571661967253661998655108194",
+    "timestamp": "1793193162833",
+    "hash": "d26fd9999712f51e168cf196a9f31ccc94432e62",
+    "bids": [
+      {
+        "price": "0.01",
+        "size": "14471"
+      },
+      {
+        "price": "0.02",
+        "size": "8566"
+      },
+      {
+        "price": "0.03",
+        "size": "46"
+      },
+      {
+        "price": "0.04",
+        "size": "30"
+      },
+      {
+        "price": "0.05",
+        "size": "264"
+      },
+      {
+        "price": "0.08",
+        "size": "10"
+      },
+      {
+        "price": "0.1",
+        "size": "2000"
+      },
+      {
+        "price": "0.11",
+        "size": "10"
+      },
+      {
+        "price": "0.12",
+        "size": "10"
+      },
+      {
+        "price": "0.15",
+        "size": "15.1"
+      },
+      {
+        "price": "0.17",
+        "size": "7"
+      },
+      {
+        "price": "0.19",
+        "size": "10"
+      },
+      {
+        "price": "0.2",
+        "size": "1010"
+      },
+      {
+        "price": "0.23",
+        "size": "10"
+      },
+      {
+        "price": "0.25",
+        "size": "197"
+      },
+      {
+        "price": "0.26",
+        "size": "31.31"
+      },
+      {
+        "price": "0.27",
+        "size": "32"
+      },
+      {
+        "price": "0.28",
+        "size": "19.21"
+      },
+      {
+        "price": "0.29",
+        "size": "48.28"
+      },
+      {
+        "price": "0.3",
+        "size": "58"
+      },
+      {
+        "price": "0.31",
+        "size": "67.42"
+      },
+      {
+        "price": "0.32",
+        "size": "72.5"
+      },
+      {
+        "price": "0.33",
+        "size": "735"
+      },
+      {
+        "price": "0.34",
+        "size": "30"
+      },
+      {
+        "price": "0.35",
+        "size": "25"
+      },
+      {
+        "price": "0.36",
+        "size": "75"
+      },
+      {
+        "price": "0.37",
+        "size": "85"
+      },
+      {
+        "price": "0.38",
+        "size": "225"
+      },
+      {
+        "price": "0.39",
+        "size": "75"
+      },
+      {
+        "price": "0.4",
+        "size": "418.6"
+      },
+      {
+        "price": "0.41",
+        "size": "161"
+      },
+      {
+        "price": "0.42",
+        "size": "180"
+      },
+      {
+        "price": "0.43",
+        "size": "525"
+      },
+      {
+        "price": "0.44",
+        "size": "682"
+      },
+      {
+        "price": "0.45",
+        "size": "697"
+      },
+      {
+        "price": "0.46",
+        "size": "356"
+      },
+      {
+        "price": "0.47",
+        "size": "887"
+      },
+      {
+        "price": "0.48",
+        "size": "425"
+      },
+      {
+        "price": "0.49",
+        "size": "75"
+      }
+    ],
+    "asks": [
+      {
+        "price": "0.99",
+        "size": "14361"
+      },
+      {
+        "price": "0.98",
+        "size": "8506"
+      },
+      {
+        "price": "0.97",
+        "size": "6"
+      },
+      {
+        "price": "0.96",
+        "size": "200"
+      },
+      {
+        "price": "0.95",
+        "size": "40"
+      },
+      {
+        "price": "0.94",
+        "size": "20.83"
+      },
+      {
+        "price": "0.92",
+        "size": "10"
+      },
+      {
+        "price": "0.9",
+        "size": "4000"
+      },
+      {
+        "price": "0.88",
+        "size": "10"
+      },
+      {
+        "price": "0.85",
+        "size": "5.1"
+      },
+      {
+        "price": "0.84",
+        "size": "10"
+      },
+      {
+        "price": "0.81",
+        "size": "15"
+      },
+      {
+        "price": "0.8",
+        "size": "1070"
+      },
+      {
+        "price": "0.76",
+        "size": "10"
+      },
+      {
+        "price": "0.75",
+        "size": "207"
+      },
+      {
+        "price": "0.74",
+        "size": "21.31"
+      },
+      {
+        "price": "0.73",
+        "size": "5"
+      },
+      {
+        "price": "0.72",
+        "size": "39.21"
+      },
+      {
+        "price": "0.71",
+        "size": "28.28"
+      },
+      {
+        "price": "0.7",
+        "size": "44.66"
+      },
+      {
+        "price": "0.69",
+        "size": "82.42"
+      },
+      {
+        "price": "0.68",
+        "size": "67.5"
+      },
+      {
+        "price": "0.67",
+        "size": "50"
+      },
+      {
+        "price": "0.66",
+        "size": "25"
+      },
+      {
+        "price": "0.65",
+        "size": "314"
+      },
+      {
+        "price": "0.64",
+        "size": "156"
+      },
+      {
+        "price": "0.63",
+        "size": "141"
+      },
+      {
+        "price": "0.62",
+        "size": "100"
+      },
+      {
+        "price": "0.61",
+        "size": "80"
+      },
+      {
+        "price": "0.6",
+        "size": "1071.6"
+      },
+      {
+        "price": "0.59",
+        "size": "1333.47"
+      },
+      {
+        "price": "0.58",
+        "size": "312"
+      },
+      {
+        "price": "0.57",
+        "size": "680"
+      },
+      {
+        "price": "0.56",
+        "size": "935"
+      },
+      {
+        "price": "0.55",
+        "size": "888"
+      },
+      {
+        "price": "0.54",
+        "size": "845.31"
+      },
+      {
+        "price": "0.53",
+        "size": "338"
+      },
+      {
+        "price": "0.52",
+        "size": "488"
+      },
+      {
+        "price": "0.51",
+        "size": "1029"
+      },
+      {
+        "price": "0.5",
+        "size": "370"
+      }
+    ],
+    "min_order_size": "5",
+    "tick_size": "0.01",
+    "neg_risk": false,
+    "last_trade_price": "0.520"
+  },
+  "source_evidence": [
+    {
+      "url": "https://api.limitless.exchange/markets/active?limit=25&page=1&sortBy=ending_soon&tradeType=clob",
+      "http_status": 200,
+      "observed_at": 1793193161.6925097,
+      "elapsed_ms": 200.22,
+      "response_sha256": "036a49064010d2ade221eead04d996a25f3c04ed57655cd44cf26d2b1d1d4cb3"
+    },
+    {
+      "url": "https://gamma-api.polymarket.com/markets?slug=bitcoin-up-or-down-october-28-2026-9am-et",
+      "http_status": 200,
+      "observed_at": 1793193161.792826,
+      "elapsed_ms": 85.19,
+      "response_sha256": "033a608aa776b5061a426314e22b59bdff65e48356d9841a1d8ab81774c5ae90"
+    },
+    {
+      "url": "https://api.limitless.exchange/markets/btc-up-or-down-hourly-p-1793181910147/orderbook",
+      "http_status": 200,
+      "observed_at": 1793193161.9669,
+      "elapsed_ms": 141.89,
+      "response_sha256": "7ef5b7eadd696e227ad0f1a9906456a60cb5198bb0a2c0b51707d805e20b8ee1"
+    },
+    {
+      "url": "https://clob.polymarket.com/book?token_id=30788426209450820816368614033285672982012558023214362350368404625864987327420",
+      "http_status": 200,
+      "observed_at": 1793193161.9564064,
+      "elapsed_ms": 126.71,
+      "response_sha256": "84b2933d4f3c1a7dfe5c6f72a7eaaeb037e66b6d4410cea1089cd3eb9e7ed812"
+    },
+    {
+      "url": "https://clob.polymarket.com/book?token_id=101214045441785481425800788174627019721763773272871571661967253661998655108194",
+      "http_status": 200,
+      "observed_at": 1793193161.985404,
+      "elapsed_ms": 151.69,
+      "response_sha256": "c9669493f8cf60e550a4b57266cfb7e23f354e5a146f87c4a3911e5ca534aa89"
+    }
+  ]
+}

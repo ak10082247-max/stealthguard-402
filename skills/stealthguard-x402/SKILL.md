@@ -14,7 +14,7 @@ Automated toolset for autonomous agents and LLMs to safely navigate external web
 - **x402 Manifest**: `https://stealthguard-402.onrender.com/.well-known/x402.json`
 - **ERC-8004 Agent ID**: `#124910` (`0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`)
 - **Settlement Asset**: Base USDC (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`)
-- **Payment Address**: `0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1`
+- **Payment Address**: `0x80E0Ae84679b7f11bE171DaADd492FBECf628cd6`
 
 ---
 

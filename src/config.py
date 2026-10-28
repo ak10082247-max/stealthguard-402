@@ -4,17 +4,21 @@ from typing import Dict, Any
 NETWORK = "eip155:8453"
 CHAIN_ID = 8453
 ASSET = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"  # Base USDC
-DEFAULT_RECIPIENT = "0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1"
+DEFAULT_RECIPIENT = "0x80E0Ae84679b7f11bE171DaADd492FBECf628cd6"
+RETIRED_RECIPIENT = "0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1"
 SOLANA_NETWORK = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"
 SOLANA_USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
-DEFAULT_SOLANA_RECIPIENT = "3tQ4GthjUMqNsyrb1rZMocMHoNewFQWjDUvHZqWeYuCN"
+DEFAULT_SOLANA_RECIPIENT = "9wuMysgXwNhtQeqJgGByAiMYc4EjzZ5wUSmnjrrt3ffh"
+RETIRED_SOLANA_RECIPIENT = "3tQ4GthjUMqNsyrb1rZMocMHoNewFQWjDUvHZqWeYuCN"
 SOLANA_FEE_PAYER = "CjNFTjvBhbJJd2B5ePPMHRLx1ELZpa8dwQgGL727eKww"
 PAYAI_FACILITATOR_URL = "https://facilitator.payai.network"
 SERVICE_NAME = "StealthGuard-402"
 SERVICE_VERSION = "1.3.0"
 
 def get_solana_recipient_address() -> str:
-    return os.getenv("SOLANA_MERCHANT_ADDRESS") or DEFAULT_SOLANA_RECIPIENT
+    address = (os.getenv("SOLANA_MERCHANT_ADDRESS") or DEFAULT_SOLANA_RECIPIENT).strip()
+    # A stale deployment environment must not override the authorized rotation.
+    return DEFAULT_SOLANA_RECIPIENT if address == RETIRED_SOLANA_RECIPIENT else address
 
 # 15 Paid Endpoints Matrix (10 Core/Alpha [$0.008 - $0.020 USDC] + 5 High-Ticket Intelligence [$0.02 - $0.25 USDC]) + Free Discovery Probe
 TOOL_PRICING: Dict[str, Dict[str, Any]] = {
@@ -323,7 +327,7 @@ TOOL_PRICING: Dict[str, Dict[str, Any]] = {
             "audited_url": "https://stealthguard-402.onrender.com/v1/stealth_scrape_and_sanitize",
             "verdict": "AUTHENTIC_X402_PROVIDER",
             "settlement_safe": True,
-            "verified_recipient": "0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1",
+            "verified_recipient": "0x80E0Ae84679b7f11bE171DaADd492FBECf628cd6",
             "pricing_verified": "0.015 USDC",
         },
     },
@@ -397,7 +401,7 @@ TOOL_PRICING: Dict[str, Dict[str, Any]] = {
             "type": "object",
             "properties": {
                 "min_order_usd": {"type": "number", "default": 10000, "description": "Minimum order size in USD to track"},
-                "include_cross_venue": {"type": "boolean", "default": False, "description": "Include cross-venue arbitrage matrix"},
+                "include_cross_venue": {"type": "boolean", "default": False, "description": "Measure mapped Limitless/Polymarket outcome books with matching oracle, opening threshold and UTC window; includes depth and venue-fee estimates without guaranteed execution or profit"},
             },
         },
         "example_output": {
@@ -497,7 +501,8 @@ TOOL_PRICING: Dict[str, Dict[str, Any]] = {
 
 def get_recipient_address() -> str:
     addr = os.getenv("WALLET_ADDRESS") or os.getenv("X402_RECIPIENT_ADDRESS") or DEFAULT_RECIPIENT
-    return addr.strip()
+    addr = addr.strip()
+    return DEFAULT_RECIPIENT if addr.lower() == RETIRED_RECIPIENT.lower() else addr
 
 def get_public_url() -> str:
     return os.getenv("PUBLIC_URL", "https://stealthguard-402.onrender.com").rstrip("/")

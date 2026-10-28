@@ -157,7 +157,13 @@ def test_attestation_signature_covers_exact_document(monkeypatch, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_cross_venue_unimplemented_is_explicit_not_fake_success():
+async def test_cross_venue_provider_failure_is_explicit_not_fake_success(monkeypatch):
+    async def fetch(client, url, **kwargs):
+        if "data-api.polymarket.com/trades" in url:
+            response = httpx.Response(200, json=[], request=httpx.Request("GET", url))
+            return response, {"url": url, "response_sha256": "fixture"}
+        raise httpx.ReadTimeout("Public cross-venue provider fixture unavailable")
+    monkeypatch.setattr(microtools, "_get", fetch)
     with pytest.raises(ToolFailure, match="Cross-venue"):
         await microtools.fulfill_microtool("alpha_polymarket_whale_orderflow", {"include_cross_venue": True})
 

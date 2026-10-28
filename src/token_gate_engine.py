@@ -214,16 +214,16 @@ async def pre_trade_agent_gate(
                 "service": "rugshield-402",
                 "action": "deep_swap_simulation",
                 "url": "https://rugshield-402.onrender.com/v1/scan",
-                "price_usd": "0.005",
-                "description": "Forked-mempool swap simulation to verify exact sell tax and liquidity lock duration before committing capital.",
-                "params": {"token_address": token_address, "chain_id": 8453}
+                "price_usd": "0.01",
+                "description": "Request token risk evidence and available buy/sell simulation; review returned provider limitations.",
+                "params": {"token_address": token_address, "chain": "base", "simulate_sell": True}
             })
         if discovered_url:
             recommended_actions.append({
                 "service": "stealthguard-402",
                 "action": "stealth_scrape_and_sanitize",
                 "url": "https://stealthguard-402.onrender.com/v1/stealth_scrape_and_sanitize",
-                "price_usd": "0.02",
+                "price_usd": "0.015",
                 "description": "Extract full whitepaper / roadmap from project website without triggering Cloudflare blocks.",
                 "params": {"url": discovered_url, "render_js": True}
             })

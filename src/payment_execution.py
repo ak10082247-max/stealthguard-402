@@ -51,11 +51,18 @@ def _reply_error(code, message, status, authorization=None):
 
 async def execute_paid_request(raw_header, tool_name, resource_url, arguments, fulfill):
     """Return (HTTP status, result, payment receipt) with at most one settlement attempt."""
+    retired_merchant = False
     try:
         # Completed results remain recoverable after authorization expiry.
         _, _, identity, _ = _payment_envelope(raw_header, tool_name, resource_url, validate_time=False)
     except Exception as exc:
-        return _reply_error("invalid_payment", str(exc), 402)
+        try:
+            # Rotation must preserve already paid deliveries. This parser mode
+            # cannot authorize any fresh preparation or settlement below.
+            _, _, identity, _ = _payment_envelope(raw_header, tool_name, resource_url, validate_time=False, retired_merchant=True)
+            retired_merchant = True
+        except Exception:
+            return _reply_error("invalid_payment", str(exc), 402)
     authorization = hashlib.sha256(identity.encode()).hexdigest()
     fingerprint = hashlib.sha256(json.dumps({
         "tool": tool_name, "resource": resource_url, "arguments": arguments,
@@ -76,6 +83,8 @@ async def execute_paid_request(raw_header, tool_name, resource_url, arguments, f
                 return result
             if row and row["state"] == "rejected":
                 return _reply_error("payment_rejected", row["error"] or "Settlement rejected", 402, authorization)
+            if retired_merchant:
+                return _reply_error("retired_merchant", "This recipient is retired. Only completed legacy deliveries can be recovered with this authorization.", 402, authorization)
             if row and row["state"] == "preparing" and row["updated"] > now - 120:
                 return _reply_error("operation_pending", "The same operation is already being prepared; retry the same authorization", 409, authorization)
             valid, _, error, status = verify_x402_payment(raw_header, tool_name, resource_url, settle=False)

@@ -206,11 +206,11 @@ async def fulfill_tool(tool_name: str, merged_args: Dict[str, Any]) -> Dict[str,
                             matches_endpoint = True
 
                 FLEET_EVM_PAYEES = {
-                    "0x73279fa4bada7cac888c62cda4f5c8104765f6f1"
+                    "0x80e0ae84679b7f11be171daadd492fbecf628cd6"
                 }
                 FLEET_SOL_PAYEES = {
-                    "3tQ4GthjUMqNsyrb1rZMocMHoNewFQWjDUvHZqWeYuCN",
-                    "3shUSbf9mkGabKqa2pdV7ZrstYvHozwusurLLuugf4dc"
+                    "9wuMysgXwNhtQeqJgGByAiMYc4EjzZ5wUSmnjrrt3ffh",
+                    "DD3A7jaXFeHcif9eYj6Vhomuxypat5Yxi8ow6wxz27yL"
                 }
                 BASE_USDC = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
                 SOLANA_USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"

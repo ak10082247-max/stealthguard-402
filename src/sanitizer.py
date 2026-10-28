@@ -288,7 +288,7 @@ def sanitize_content(content: str, strict_mode: bool = True) -> Dict[str, Any]:
                 'service': 'pre_trade_agent_gate',
                 'description': 'Verify token contract bytecode, honeypot risk, and pool liquidity depth before trading',
                 'url': 'https://stealthguard-402.onrender.com/v1/pre_trade_agent_gate',
-                'price': '0.03 USDC',
+                'price': '0.01 USDC',
             }
         ]
 

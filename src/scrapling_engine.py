@@ -2,6 +2,7 @@ import asyncio
 import logging
 import json
 import re
+import time
 from typing import Dict, Any, Optional, Tuple
 from bs4 import BeautifulSoup
 from .sanitizer import sanitize_content
@@ -49,6 +50,17 @@ def extract_structured_json(html: str, schema: Dict[str, Any]) -> Dict[str, Any]
                 extracted[key] = None
     return extracted
 
+
+def _require_extracted_page(html, status):
+    if not isinstance(html, str) or not html.strip():
+        raise RuntimeError("Target returned no extractable content")
+    if len(html.encode("utf-8")) > 2_000_000:
+        raise RuntimeError("Target content exceeds extraction size limit")
+    if not isinstance(status, int) or not 200 <= status < 300:
+        raise RuntimeError("Target returned an unsuccessful HTTP response; no content extracted")
+    if re.search(r"cf-browser-verification|just a moment\.\.\.|<title[^>]*>\s*(?:attention required|access denied)", html, re.IGNORECASE):
+        raise RuntimeError("Target denied access or returned an anti-bot challenge; no content extracted")
+
 async def stealth_scrape_and_sanitize(
     url: str,
     extract_schema: Optional[Dict[str, Any]] = None,
@@ -76,15 +88,24 @@ async def stealth_scrape_and_sanitize(
         from scrapling.fetchers import StealthyFetcher
         from markdownify import markdownify
         require_public_url(url)
+        budget_exceeded = []
 
         def setup_page(page):
             # The browser gets content through the same pinned transport as HTTP.
             # It never resolves the hostname again after the public-address check.
+            started, requests, received = time.monotonic(), 0, 0
             def guard(route):
+                nonlocal requests, received
                 try:
+                    requests += 1
+                    if requests > 64 or received >= 5_000_000 or time.monotonic() - started > 25:
+                        budget_exceeded.append(True)
+                        raise RuntimeError("Browser network budget exceeded")
                     request = route.request
                     response = fetch_pinned(request.url, method=request.method,
-                                            headers=request.all_headers(), body=request.post_data_buffer)
+                                            headers=request.all_headers(), body=request.post_data_buffer,
+                                            limit=min(2_000_000, 5_000_000 - received))
+                    received += len(response["body"])
                     route.fulfill(status=response["status"], headers=response["headers"], body=response["body"])
                 except Exception:
                     route.abort()
@@ -98,9 +119,10 @@ async def stealth_scrape_and_sanitize(
                                         page_setup=setup_page, google_search=False,
                                         extra_flags=["--disable-quic", "--disable-background-networking"],
                                         additional_args={"service_workers": "block", "ignore_https_errors": False})
+            if budget_exceeded:
+                raise RuntimeError("Browser network budget exceeded; incomplete rendering was not sold")
             html = res.html_content
-            if not isinstance(html, str) or not html.strip():
-                raise RuntimeError("Browser returned no extractable DOM")
+            _require_extracted_page(html, res.status)
             return html, markdownify(html), res.status, "scrapling_stealthy_browser"
 
         current_url = url
@@ -114,12 +136,7 @@ async def stealth_scrape_and_sanitize(
                 current_url = urljoin(current_url, location)
                 continue
             html = res["body"].decode("utf-8", errors="replace")
-            if not isinstance(html, str) or not html.strip():
-                raise RuntimeError("Target returned no extractable content")
-            if len(html.encode("utf-8")) > 2_000_000:
-                raise RuntimeError("Target content exceeds extraction size limit")
-            if res["status"] in (403, 503) or "cf-browser-verification" in html or "Just a moment..." in html:
-                raise RuntimeError("Target denied access or returned an anti-bot challenge; no content extracted")
+            _require_extracted_page(html, res["status"])
             return html, markdownify(html), res["status"], "curl_cffi_pinned"
         raise RuntimeError("Target exceeded the redirect limit")
 
@@ -136,12 +153,20 @@ async def stealth_scrape_and_sanitize(
     # Pass entire markdown & text through CanaryGuard deterministic sanitizer
     combined_raw_text = f"{markdown_content}\n\n{json.dumps(structured_data) if structured_data else ''}"
     canaryguard_receipt = sanitize_content(combined_raw_text, strict_mode=strict_mode)
+    # Structured fields are another output channel. Never return their raw
+    # instruction content beside a blocked or cleaned Markdown result.
+    if structured_data is not None:
+        structured_data = (None if canaryguard_receipt["status"] == "blocked" else {
+            key: sanitize_content(value, strict_mode=strict_mode)["sanitized_content"] if isinstance(value, str) else value
+            for key, value in structured_data.items()
+        })
 
     # Cross-Sell Ecosystem Flywheel: Recommend actions based on discovered assets and links
     recommended_actions = []
-    token_matches = re.findall(r'\b0x[a-fA-F0-9]{40}\b', combined_raw_text)
+    recommendation_text = canaryguard_receipt["sanitized_content"]
+    token_matches = re.findall(r'\b0x[a-fA-F0-9]{40}\b', recommendation_text)
     dex_markers = ["dexscreener.com", "aerodrome.finance", "app.uniswap.org", "basescan.org/token", "basescan.org/address", "clanker.world"]
-    has_dex = any(d in combined_raw_text.lower() for d in dex_markers)
+    has_dex = any(d in recommendation_text.lower() for d in dex_markers)
 
     if token_matches or has_dex:
         detected_token = token_matches[0] if token_matches else "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
@@ -149,7 +174,7 @@ async def stealth_scrape_and_sanitize(
             "service": "stealthguard-402",
             "action": "pre_trade_agent_gate",
             "url": "https://stealthguard-402.onrender.com/v1/pre_trade_agent_gate",
-            "price_usd": "0.03",
+            "price_usd": "0.01",
             "description": "Verify token bytecode, DexScreener LP depth, and sanitize metadata via CanaryGuard firewall before trading.",
             "params": {"token_or_service_address": detected_token, "chain": "base"}
         })
@@ -157,16 +182,16 @@ async def stealth_scrape_and_sanitize(
             "service": "rugshield-402",
             "action": "deep_swap_simulation",
             "url": "https://rugshield-402.onrender.com/v1/scan",
-            "price_usd": "0.005",
-            "description": "Execute forked-mempool buy/sell tax simulation, honeypot detection, and liquidity lock analysis.",
-            "params": {"token_address": detected_token, "chain_id": 8453}
+            "price_usd": "0.01",
+            "description": "Request token risk evidence and available buy/sell simulation; review returned provider limitations.",
+            "params": {"token_address": detected_token, "chain": "base", "simulate_sell": True}
         })
-    elif "polymarket" in combined_raw_text.lower() or "prediction market" in combined_raw_text.lower() or "odds" in combined_raw_text.lower():
+    elif "polymarket" in recommendation_text.lower() or "prediction market" in recommendation_text.lower() or "odds" in recommendation_text.lower():
         recommended_actions.append({
             "service": "stealthguard-402",
             "action": "polymarket_alpha_divergence",
             "url": "https://stealthguard-402.onrender.com/v1/polymarket_alpha_divergence",
-            "price_usd": "0.05",
+            "price_usd": "0.02",
             "description": "Scan live CLOB orderbook anomalies, volume/liquidity divergences, and sanitize market resolution rules.",
             "params": {"limit": 25}
         })

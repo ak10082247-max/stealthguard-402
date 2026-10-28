@@ -116,8 +116,6 @@ def _signed_evidence(document):
 async def fulfill_microtool(tool, args):
     async with httpx.AsyncClient(timeout=15, follow_redirects=False, headers={"User-Agent": "StealthGuard/1.3.1"}) as client:
         if tool in ("polymarket_top_whales", "alpha_polymarket_whale_orderflow"):
-            if tool == "alpha_polymarket_whale_orderflow" and args.get("include_cross_venue", False):
-                raise ToolFailure("Cross-venue outcome identity and executable quotes are not yet available. Use include_cross_venue:false for measured Polymarket trades; no charge submitted.", code="capability_unavailable")
             minimum = args.get("min_order_usd", 10000)
             response, proof = await _get(client, "https://data-api.polymarket.com/trades", params={"limit": 500, "filterType": "CASH", "filterAmount": minimum})
             trades = response.json()
@@ -134,9 +132,25 @@ async def fulfill_microtool(tool, args):
                                   "transaction": trade.get("transactionHash"), "timestamp": trade.get("timestamp"), "outcome": trade.get("outcome")})
             large.sort(key=lambda item: item["size_usdc"], reverse=True)
             large = large[:args.get("limit", 50)]
+            wallets = {}
+            for trade in large:
+                wallet = trade.get("wallet")
+                if not isinstance(wallet, str) or not wallet:
+                    continue
+                activity = wallets.setdefault(wallet, {"wallet": wallet, "observed_trade_count": 0, "buy_notional": 0.0, "sell_notional": 0.0})
+                activity["observed_trade_count"] += 1
+                field = "buy_notional" if trade["side"] == "BUY" else "sell_notional" if trade["side"] == "SELL" else None
+                if field:
+                    activity[field] += trade["size_usdc"]
+            cross_venue = {"cross_venue_status": "not_requested"}
+            if tool == "alpha_polymarket_whale_orderflow" and args.get("include_cross_venue", False):
+                from .cross_venue import scan_limitless_polymarket
+                cross_venue = await scan_limitless_polymarket(client, _get)
+                _sanitize(cross_venue)
             return {"status": "success", "feed": tool, "large_orders": large, "top_whales": large,
                     "order_filter_usd": minimum, "sampled_trades": len(trades), "provenance": [proof],
-                    "cross_venue_status": "not_requested", "wallet_clustering": "not_inferred", "canaryguard_receipt": _sanitize(large)}
+                    **cross_venue, "wallet_activity": list(wallets.values()), "wallet_activity_scope": "visible filtered trade sample only; addresses are not inferred independent actors or proven profitable traders",
+                    "wallet_clustering": "not_inferred", "canaryguard_receipt": _sanitize(large)}
 
         if tool == "polymarket_crypto_odds":
             asset = args.get("asset", "BTC").upper()

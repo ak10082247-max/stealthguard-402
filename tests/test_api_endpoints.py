@@ -123,7 +123,7 @@ async def test_magic_test_signatures_cannot_unlock_paid_feeds():
                     "signature": "0x11" + secrets.token_hex(64),
                     "authorization": {
                         "from": "0x1111111111111111111111111111111111111111",
-                        "to": "0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1",
+                        "to": "0x80E0Ae84679b7f11bE171DaADd492FBECf628cd6",
                         "value": "10000",
                         "validAfter": "0",
                         "validBefore": "2000000000",

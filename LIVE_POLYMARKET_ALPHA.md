@@ -3,7 +3,7 @@
 > **Last Automated Scan**: `2026-10-14 21:23:51 UTC`  
 > **Source Engine**: Polymarket Gamma API + Live CLOB Orderbook Divergence + CanaryGuard Firewall  
 > **Update Cadence**: Refreshed automatically every 2 hours via GitHub Actions  
-> **Uptime & Pay-to-Call**: [`https://stealthguard-402.onrender.com`](https://stealthguard-402.onrender.com) | Wallet: `0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1`
+> **Uptime & Pay-to-Call**: [`https://stealthguard-402.onrender.com`](https://stealthguard-402.onrender.com) | Wallet: `0x80E0Ae84679b7f11bE171DaADd492FBECf628cd6`
 
 ---
 
